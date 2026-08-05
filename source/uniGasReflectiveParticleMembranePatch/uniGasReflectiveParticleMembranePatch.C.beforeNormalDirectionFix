@@ -1,0 +1,407 @@
+/*---------------------------------------------------------------------------*\
+  =========                 |
+  \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
+   \\    /   O peration     |
+    \\  /    A nd           | www.openfoam.com
+     \\/     M anipulation  |
+-------------------------------------------------------------------------------
+    Copyright (C) 2011-2017 OpenFOAM Foundation
+    Copyright (C) 2019-2023 OpenCFD Ltd.
+-------------------------------------------------------------------------------
+License
+    This file is part of OpenFOAM.
+
+    OpenFOAM is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
+    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "uniGasReflectiveParticleMembranePatch.H"
+#include "addToRunTimeSelectionTable.H"
+#include "OSspecific.H"
+#include <fstream>
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+namespace Foam
+{
+defineTypeNameAndDebug(uniGasReflectiveParticleMembranePatch, 0);
+
+addToRunTimeSelectionTable
+(
+    uniGasCyclicBoundary,
+    uniGasReflectiveParticleMembranePatch,
+    dictionary
+);
+}
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePatch
+(
+    const polyMesh& mesh,
+    uniGasCloud& cloud,
+    const dictionary& dict
+)
+:
+    uniGasCyclicBoundary(mesh, cloud, dict),
+    propsDict_(dict.subDict(typeName + "Properties")),
+    p_(propsDict_.get<scalar>("reflectionProbability")),
+    temperature_(propsDict_.get<scalar>("temperature")),
+    velocity_(propsDict_.get<vector>("velocity")),
+    nReflections_(0),
+    nRejections_(0),
+    
+    //
+    membraneImpulse_(Zero),
+    lastReportTime_(mesh.time().value()),
+    forceWriteInterval_
+    (
+       propsDict_.lookupOrDefault<scalar>
+       (
+          "forceWriteInterval",
+          mesh.time().deltaTValue()
+       )
+    ),
+    forceFileInitialised_(false)
+{
+    writeInTimeDir_ = false;
+    writeInCase_ = false;
+}
+
+
+// * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
+
+void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
+{
+    label nReflections = nReflections_;
+    label nRejections = nRejections_;
+    vector membraneImpulse = membraneImpulse_;
+
+    if (Pstream::parRun())
+    {
+        reduce(nReflections, sumOp<label>());
+        reduce(nRejections, sumOp<label>());
+        reduce(membraneImpulse, sumOp<vector>());
+    }
+
+    const scalar currentTime = mesh_.time().value();
+
+    const scalar reportDeltaT = max
+    (
+        currentTime - lastReportTime_,
+        mesh_.time().deltaTValue()
+    );
+
+    const vector membraneForce = membraneImpulse/max(reportDeltaT, VSMALL);
+
+    const label nTotal = nReflections + nRejections;
+
+    if (Pstream::master())
+    {
+        Info<< "    no Reflections: " << nReflections
+            << ", no Rejections: " << nRejections;
+
+        if (nTotal > 0)
+        {
+            Info<< " ratio reflections/(reflections+rejections): "
+                << scalar(nReflections)/scalar(nTotal);
+        }
+        else
+        {
+            Info<< " ratio reflections/(reflections+rejections): 0";
+        }
+
+        Info<< nl
+            << "    membrane impulse [N s]: " << membraneImpulse
+            << nl
+            << "    membrane force [N]: " << membraneForce
+            << nl
+            << "    membrane force averaging time [s]: " << reportDeltaT
+            << endl;
+    }
+
+    // Reset interval statistics after reporting
+    membraneImpulse_ = Zero;
+    nReflections_ = 0;
+    nRejections_ = 0;
+    lastReportTime_ = currentTime;
+}
+
+
+
+void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
+{
+    const scalar currentTime = mesh_.time().value();
+
+    if ((currentTime - lastReportTime_) < forceWriteInterval_)
+    {
+        return;
+    }
+
+    const scalar reportDeltaT = max
+    (
+        currentTime - lastReportTime_,
+        mesh_.time().deltaTValue()
+    );
+
+    const vector localForce = membraneImpulse_/max(reportDeltaT, VSMALL);
+
+    const label procNo = Pstream::myProcNo();
+
+    fileName outDir =
+        mesh_.time().globalPath()
+       /"postProcessing"
+       /"membraneForce"
+       /patchName_
+       /("processor" + name(procNo));
+
+    mkDir(outDir);
+
+    fileName outFile = outDir/"membraneForce.dat";
+
+    if (!forceFileInitialised_)
+    {
+        std::ofstream os(outFile.c_str(), std::ios_base::out);
+
+        os  << "# time dt proc nReflections nRejections "
+            << "impulseX impulseY impulseZ "
+            << "forceX forceY forceZ"
+            << std::endl;
+
+        forceFileInitialised_ = true;
+    }
+
+    std::ofstream os(outFile.c_str(), std::ios_base::out | std::ios_base::app);
+
+    os  << currentTime << " "
+        << reportDeltaT << " "
+        << procNo << " "
+        << nReflections_ << " "
+        << nRejections_ << " "
+        << membraneImpulse_.x() << " "
+        << membraneImpulse_.y() << " "
+        << membraneImpulse_.z() << " "
+        << localForce.x() << " "
+        << localForce.y() << " "
+        << localForce.z()
+        << std::endl;
+
+    membraneImpulse_ = Zero;
+    nReflections_ = 0;
+    nRejections_ = 0;
+    lastReportTime_ = currentTime;
+}
+
+
+
+void Foam::uniGasReflectiveParticleMembranePatch::initialConfiguration()
+{}
+
+
+void Foam::uniGasReflectiveParticleMembranePatch::controlMol
+(
+    uniGasParcel& p,
+    uniGasParcel::trackingData& td
+)
+{
+    const label faceI = p.face();
+
+    vector nF = mesh_.faceAreas()[faceI];
+    vector nw = p.normal();
+
+    vector& U = p.U();
+
+    //
+    const vector preU = U;
+
+    label fA = coupledFacesA_.find(faceI);
+    label fB = coupledFacesB_.find(faceI);
+
+    nF /= mag(nF);
+    nw /= mag(nw);
+
+    scalar U_dot_nw = U & nw;
+    vector Ut = U - U_dot_nw*nw;
+
+    label typeId = p.typeId();
+
+    const scalar T = temperature_;
+
+    scalar mass = cloud_.constProps(typeId).mass();
+
+    Random& rndGen = cloud_.rndGen();
+
+    scalar d = nF & U;
+
+    if(d > 0) // processor boundary
+    {
+        if(fA != -1)
+        {
+            scalar pRandom = rndGen.sample01<scalar>();
+
+            if( pRandom <= p_ ) // reflect molecule
+            {
+
+                // Construct a robust tangential basis.
+                // Component-wise scaling cannot produce a tangential component
+                // when the incident velocity is exactly parallel to the face normal.
+                vector tw1 = Ut;
+
+                if (mag(tw1) < SMALL)
+                {
+                    // Select an axis that is not parallel to nw
+                    const vector axis =
+                        (mag(nw.x()) < 0.9)
+                      ? vector(1, 0, 0)
+                      : vector(0, 1, 0);
+
+                    // Project the selected axis onto the tangential plane
+                    tw1 = axis - (axis & nw)*nw;
+                }
+
+                tw1 /= mag(tw1);
+
+                // Second tangential unit vector
+                vector tw2 = nw ^ tw1;
+                tw2 /= mag(tw2);
+
+
+                U =
+                    sqrt(physicoChemical::k.value()*T/mass)
+                   *(
+                        rndGen.GaussNormal<scalar>()*tw1
+                      + rndGen.GaussNormal<scalar>()*tw2
+                      - sqrt
+                        (
+                            -2.0*log(max(1 - rndGen.sample01<scalar>(), VSMALL))
+                        )*nw
+                    );
+
+                scalar Un = U & nF;
+
+                U -= 2.0*Un*nF;
+
+                U += velocity_;
+
+		// Momentum transferred from particle to membrane.
+		// Particle momentum change is m*(U - preU), therefore
+		// membrane impulse is -m*(U - preU) = m*(preU - U).
+		membraneImpulse_ += cloud_.nParticle()*mass*(preU - U);
+
+
+                td.switchProcessor = false;
+
+                ++nReflections_;
+
+        writeLocalMembraneForce();
+            }
+            else
+            {
+                ++nRejections_;
+            }
+        }
+    }
+    else if (d < 0) // cyclic (non-processor boundary)
+    {
+        if(fB != -1)
+        {
+            scalar pRandom = rndGen.sample01<scalar>();
+
+            if( pRandom <= p_ ) // reflect molecule
+            {
+
+                // Construct a robust tangential basis.
+                // Component-wise scaling cannot produce a tangential component
+                // when the incident velocity is exactly parallel to the face normal.
+                vector tw1 = Ut;
+
+                if (mag(tw1) < SMALL)
+                {
+                    // Select an axis that is not parallel to nw
+                    const vector axis =
+                        (mag(nw.x()) < 0.9)
+                      ? vector(1, 0, 0)
+                      : vector(0, 1, 0);
+
+                    // Project the selected axis onto the tangential plane
+                    tw1 = axis - (axis & nw)*nw;
+                }
+
+                tw1 /= mag(tw1);
+
+                // Second tangential unit vector
+                vector tw2 = nw ^ tw1;
+                tw2 /= mag(tw2);
+
+
+                U =
+                    sqrt(physicoChemical::k.value()*T/mass)
+                *(
+                        rndGen.GaussNormal<scalar>()*tw1
+                    + rndGen.GaussNormal<scalar>()*tw2
+                    - sqrt(-2.0*log(max(1 - rndGen.sample01<scalar>(), VSMALL)))*nw
+                    );
+
+                scalar Un = U & nF;
+
+                U -= 2.0*Un*nF;
+
+                U += velocity_;
+
+		// Momentum transferred from particle to membrane.
+		// Particle momentum change is m*(U - preU), therefore
+		// membrane impulse is -m*(U - preU) = m*(preU - U).
+		membraneImpulse_ += cloud_.nParticle()*mass*(preU - U);
+
+
+                td.switchProcessor = false;
+
+                ++nReflections_;
+
+        writeLocalMembraneForce();
+            }
+            else
+            {
+                ++nRejections_;
+            }
+        }
+    }
+}
+
+
+void Foam::uniGasReflectiveParticleMembranePatch::output
+(
+    const fileName& fixedPathName,
+    const fileName& timePath
+)
+{
+    Info<< "DEBUG membrane output() called at time = "
+        << mesh_.time().value()
+        << endl;
+
+    calculateProperties();
+}
+
+
+void Foam::uniGasReflectiveParticleMembranePatch::updateProperties
+(
+    const dictionary& dict
+)
+{
+    // the main properties should be updated first
+    uniGasCyclicBoundary::updateProperties(dict);
+}
+
+
+// ************************************************************************* //
