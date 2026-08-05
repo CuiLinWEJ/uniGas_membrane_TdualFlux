@@ -1,0 +1,37 @@
+# OpenFOAM build files
+platforms/
+lnInclude/
+*.o
+*.so
+*.dep
+
+# Parallel calculation output
+processor*/
+processors*/
+
+# Simulation output
+postProcessing/
+VTK/
+*.vtk
+*.vtu
+*.vtp
+*.OpenFOAM
+*.foam
+
+# Logs and temporary files
+log
+log.*
+*.log
+core
+core.*
+nohup.out
+*.tmp
+*.bak
+*.swp
+*~
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
