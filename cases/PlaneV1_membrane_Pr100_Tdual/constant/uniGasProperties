@@ -1,0 +1,266 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2406                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version         2;
+    format          ascii;
+    class           dictionary;
+    location        "constant";
+    object          uniGasProperties;
+}
+
+solution
+{
+    active                  no;
+    coupled                 no;
+    cellValueSourceCorrection no;
+    calcFrequency           1;
+    maxTrackTime            1e+09;
+
+    sourceTerms
+    {
+        resetOnStartup      no;
+        schemes
+        {
+        }
+    }
+}
+
+nEquivalentParticles        2.5e12;
+
+chemicalReactions          false;
+chargedParticles           false;
+
+cellWeightedSimulation     false;
+
+cellWeightedProperties
+{
+    minParticlesPerSubCell 5;
+    particlesPerSubCell    5;
+}
+
+axisymmetricSimulation     false;
+
+axisymmetricProperties
+{
+    radialExtentOfDomain        0.03;
+    maxRadialWeightingFactor    1000;
+}
+
+adaptiveSimulation         false;
+
+adaptiveProperties
+{
+    timeStepAdaptation     false;
+    subCellAdaptation      false;
+    cellWeightAdaptation   false;
+    adaptationInterval     10;
+    maxTimeStepMCTRatio    0.2;
+    maxCourantNumber       0.5;
+    maxSubCellSizeMFPRatio 0.5;
+}
+
+collisionModel             dsmc;
+
+dsmcCollisionPartnerModel  noTimeCounter;
+
+dsmcCollisionModel         LarsenBorgnakkeVariableHardSphere;
+
+collisionProperties
+{
+    Tref                                273;
+    macroInterpolation                  true;
+    theta                               0.1;
+    rotationalRelaxationCollisionNumber 5.0;
+    electronicRelaxationCollisionNumber 500.0;
+}
+
+typeIdList (Ar);
+
+moleculeProperties
+{
+    He
+    {
+        mass                            6.65e-27;
+        diameter                        2.33e-10;
+        rotationalDegreesOfFreedom      0;
+        vibrationalModes                0;
+        omega                           0.66;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature ();
+        dissociationTemperature              ();
+        ionisationTemperature                285000;
+        charDissQuantumLevel                 ();
+
+        Zref                                 ();
+        referenceTempForZref                 ();
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    O
+    {
+        mass                            26.57e-27;
+        diameter                        3.00e-10;
+        rotationalDegreesOfFreedom      0;
+        vibrationalModes                0;
+        omega                           0.80;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature ();
+        dissociationTemperature              ();
+        ionisationTemperature                158000;
+        charDissQuantumLevel                 ();
+
+        Zref                                 ();
+        referenceTempForZref                 ();
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    N2
+    {
+        mass                            46.52e-27;
+        diameter                        4.17e-10;
+        rotationalDegreesOfFreedom      2;
+        vibrationalModes                1;
+        omega                           0.74;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature (3371);
+        dissociationTemperature              (113500);
+        ionisationTemperature                181000;
+        charDissQuantumLevel                 (33);
+
+        Zref                                 (52560);
+        referenceTempForZref                 (3371);
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    O2
+    {
+        mass                            53.14e-27;
+        diameter                        4.07e-10;
+        rotationalDegreesOfFreedom      2;
+        vibrationalModes                1;
+        omega                           0.77;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature (2256);
+        dissociationTemperature              (59500);
+        ionisationTemperature                142000;
+        charDissQuantumLevel                 (26);
+
+        Zref                                 (17900);
+        referenceTempForZref                 (2256);
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    H
+    {
+        mass                            1.67e-27;
+        diameter                        2.50e-10;
+        rotationalDegreesOfFreedom      0;
+        vibrationalModes                0;
+        omega                           0.67;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature ();
+        dissociationTemperature              ();
+        ionisationTemperature                157800;
+        charDissQuantumLevel                 ();
+
+        Zref                                 ();
+        referenceTempForZref                 ();
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    N
+    {
+        mass                            23.26e-27;
+        diameter                        3.00e-10;
+        rotationalDegreesOfFreedom      0;
+        vibrationalModes                0;
+        omega                           0.80;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature ();
+        dissociationTemperature              ();
+        ionisationTemperature                168000;
+        charDissQuantumLevel                 ();
+
+        Zref                                 ();
+        referenceTempForZref                 ();
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    NO
+    {
+        mass                            49.83e-27;
+        diameter                        4.20e-10;
+        rotationalDegreesOfFreedom      2;
+        vibrationalModes                1;
+        omega                           0.79;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature (2719);
+        dissociationTemperature              (75500);
+        ionisationTemperature                108000;
+        charDissQuantumLevel                 (27);
+
+        Zref                                 (14000);
+        referenceTempForZref                 (2719);
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+
+    Ar
+    {
+        mass                            66.34e-27;
+        diameter                        4.17e-10;
+        rotationalDegreesOfFreedom      0;
+        vibrationalModes                0;
+        omega                           0.81;
+        alpha                           1.0;
+
+        characteristicVibrationalTemperature ();
+        dissociationTemperature              ();
+        ionisationTemperature                183000;
+        charDissQuantumLevel                 ();
+
+        Zref                                 ();
+        referenceTempForZref                 ();
+        charge                               0;
+        numberOfElectronicLevels             1;
+        electronicEnergyList                 (0);
+        degeneracyList                       (1);
+    }
+}
+
+
+
+// ************************************************************************* //

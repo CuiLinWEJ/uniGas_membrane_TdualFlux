@@ -1,0 +1,96 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2406                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      boundariesDict;
+}
+
+uniGasPatchBoundaries
+(
+    boundary
+    {
+        patchBoundaryProperties
+        {
+            patch       flow;
+        }
+
+        boundaryModel       uniGasDeletionPatch;
+
+        uniGasDeletionPatchProperties
+        {
+            allSpecies      yes;
+        }
+    }
+
+    boundary
+    {
+        patchBoundaryProperties
+        {
+            patch       statGrid_master;
+        }
+
+        boundaryModel       uniGasDiffuseWallPatch;
+
+        uniGasDiffuseWallPatchProperties
+        {
+            velocity        (0 0 0);
+            temperature     1866.7;
+        }
+    }
+
+    boundary
+    {
+        patchBoundaryProperties
+        {
+            patch       statGrid_slave;
+        }
+
+        boundaryModel       uniGasDiffuseWallPatch;
+
+        uniGasDiffuseWallPatchProperties
+        {
+            velocity        (0 0 0);
+            temperature     200;
+        }
+    }
+);
+
+uniGasCyclicBoundaries
+(
+);
+
+uniGasGeneralBoundaries
+(
+    boundary
+    {
+        generalBoundaryProperties
+        {
+            patch                   flow;
+        }
+        boundaryModel                   uniGasFreeStreamInflowPatch;
+        uniGasFreeStreamInflowPatchProperties
+        {
+            typeIds                     (Ar);
+            velocity                    (1317.3 0 0);
+            translationalTemperature    200;
+            rotationalTemperature       200;
+            vibrationalTemperature      200;
+            electronicTemperature       0;
+            numberDensities
+            {
+                Ar                      1e20;
+            };
+        }
+    }
+);
+
+// ************************************************************************* //
