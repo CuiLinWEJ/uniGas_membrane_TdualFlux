@@ -1,0 +1,60 @@
+# OpenFOAM build products
+platforms/
+lnInclude/
+*.o
+*.so
+*.dep
+/lib/
+
+# Generated meshes (all included cases rebuild with blockMesh)
+**/constant/polyMesh/
+
+# Parallel and simulation output
+processor*/
+processors*/
+postProcessing/
+VTK/
+*.vtk
+*.vtu
+*.vtp
+*.OpenFOAM
+*.foam
+
+# Logs, crash files, and temporary files
+log
+log.*
+*.log
+core
+core.*
+nohup.out
+*.tmp
+*.bak
+*.swp
+*~
+
+# Development snapshots (use Git history instead)
+*.before*
+*.sourceV1
+*.failedSyntax
+*.Pr100Verified
+*.TdualFluxValidated
+
+# Python/editor/OS files
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Credentials / local secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*
+secrets*
+id_rsa
+id_ed25519
