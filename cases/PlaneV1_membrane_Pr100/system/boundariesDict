@@ -1,0 +1,81 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  v2406                                 |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "system";
+    object      boundariesDict;
+}
+
+uniGasPatchBoundaries
+(
+    boundary
+    {
+        patchBoundaryProperties
+        {
+            patch       farField;
+        }
+
+        boundaryModel       uniGasDeletionPatch;
+
+        uniGasDeletionPatchProperties
+        {
+            allSpecies      yes;
+        }
+    }
+);
+
+uniGasCyclicBoundaries
+(
+    boundary
+    {
+        cyclicBoundaryProperties
+        {
+            patch       plate_front;
+        }
+
+        boundaryModel       uniGasReflectiveParticleMembranePatch;
+
+        uniGasReflectiveParticleMembranePatchProperties
+        {
+            reflectionProbability  1.00;
+            velocity               (0 0 0);
+            temperature            200;
+            forceWriteInterval     1e-6;
+        }
+    }
+);
+
+uniGasGeneralBoundaries
+(
+    boundary
+    {
+        generalBoundaryProperties
+        {
+            patch                   farField;
+        }
+        boundaryModel                   uniGasFreeStreamInflowPatch;
+        uniGasFreeStreamInflowPatchProperties
+        {
+            typeIds                     (Ar);
+            velocity                    (1317.3 0 0);
+            translationalTemperature    200;
+            rotationalTemperature       200;
+            vibrationalTemperature      200;
+            electronicTemperature       0;
+            numberDensities
+            {
+                Ar                      1e20;
+            };
+        }
+    }
+);
+
+// ************************************************************************* //
