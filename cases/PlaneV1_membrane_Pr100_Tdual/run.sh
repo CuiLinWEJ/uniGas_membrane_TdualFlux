@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -o pipefail
 
+# Run from the case directory regardless of where the script is invoked.
 CASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$CASE_DIR"
 
