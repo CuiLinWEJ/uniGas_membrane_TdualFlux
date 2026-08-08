@@ -32,8 +32,14 @@ Description
 
     Incident particles are diffusely reflected with probability Pr or
     transmitted through the coupled membrane with probability Pt = 1 - Pr.
-    The implementation supports side-dependent membrane temperatures,
-    bidirectional transmitted-particle statistics, and membrane-force output.
+    The implementation supports physical front/back membrane temperatures,
+    front-to-back/back-to-front transmitted-particle statistics, and
+    membrane-force output.
+
+    Side convention for the revised single-entry two-sided setup:
+
+        front = configured/control cyclic patch
+        back  = cyclic neighbour patch
 
     The current research implementation remains under validation.
 
@@ -41,7 +47,7 @@ Usage
     Example boundary-condition specification:
 
     \verbatim
-    generalBoundaryProperties
+    cyclicBoundaryProperties
     {
         patch       plate_front;
     }
@@ -51,12 +57,15 @@ Usage
     uniGasReflectiveParticleMembranePatchProperties
     {
         reflectionProbability   0.5;
-        temperatureMaster       1866.7;
-        temperatureSlave        200;
+        temperatureFront        1866.7;
+        temperatureBack         200;
         velocity                (0 0 0);
         forceWriteInterval      1e-3;
     }
     \endverbatim
+
+    Legacy temperatureMaster/temperatureSlave dictionary keys are accepted
+    as fallbacks for compatibility.
 
 SourceFiles
     uniGasReflectiveParticleMembranePatch.C
@@ -82,7 +91,7 @@ namespace Foam
 
 class uniGasReflectiveParticleMembranePatch
 :
-	public uniGasCyclicBoundary
+    public uniGasCyclicBoundary
 {
     // Private data
 
@@ -91,31 +100,32 @@ class uniGasReflectiveParticleMembranePatch
         //- Reflection probability Pr; transmission probability Pt = 1 - Pr
         scalar p_;
 
-        //- Temperature used on the front/master side of the coupled patch
-        scalar temperatureMaster_;
-        //- Temperature used on the back/slave side of the coupled patch
-        scalar temperatureSlave_;
+        //- Temperature used on the physical front side (control patch)
+        scalar temperatureFront_;
+
+        //- Temperature used on the physical back side (neighbour patch)
+        scalar temperatureBack_;
 
         vector velocity_;
 
         label nReflections_;
-        
+
         //- Number of particles transmitted during the current reporting interval
         label nTransmissions_;
 
-        // Transmission statistics for membrane flux output
-        label nTransAtoB_;
-        label nTransBtoA_;
+        //- Physical front-to-back/back-to-front transmission counts
+        label nTransFrontToBack_;
+        label nTransBackToFront_;
 
-        scalar transmittedNpAtoB_;
-        scalar transmittedNpBtoA_;
+        scalar transmittedNpFrontToBack_;
+        scalar transmittedNpBackToFront_;
 
-        scalar transmittedMassAtoB_;
-        scalar transmittedMassBtoA_;
+        scalar transmittedMassFrontToBack_;
+        scalar transmittedMassBackToFront_;
 
         vector transmittedMomentum_;
-	
-	//- Local accumulated impulse transferred from particles to membrane
+
+        //- Local accumulated impulse transferred from particles to membrane
         vector membraneImpulse_;
 
         //- Time of last local force report
@@ -136,11 +146,11 @@ public:
 
         //- Construct from components
         uniGasReflectiveParticleMembranePatch
-		(
+        (
             const polyMesh& mesh,
             uniGasCloud& cloud,
             const dictionary& dict
-		);
+        );
 
 
     //- Destructor
@@ -151,7 +161,7 @@ public:
 
         void calculateProperties();
 
-	void writeLocalMembraneForce();
+        void writeLocalMembraneForce();
 
         //- Create an initial configuration
         void initialConfiguration();
