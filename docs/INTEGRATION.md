@@ -56,11 +56,11 @@ find /path/to/uniGasFoam -name 'uniGasReflectiveParticleMembranePatch.[CH]' -pri
 
 ## Dictionary Notes
 
-Required side-dependent temperature entries:
+Preferred side-dependent temperature entries:
 
 ```text
 temperatureFront
 temperatureBack
 ```
 
-A single `temperature` entry may be used as a general fallback. The deprecated physical-direction names `temperatureMaster` and `temperatureSlave` are no longer part of the public interface.
+A single `temperature` entry may be used as a general fallback. Legacy physical-side key names are no longer supported.
