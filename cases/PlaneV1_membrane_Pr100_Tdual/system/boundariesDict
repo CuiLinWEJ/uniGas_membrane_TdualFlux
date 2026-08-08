@@ -47,8 +47,8 @@ uniGasCyclicBoundaries
         {
             reflectionProbability  1.00;
             velocity               (0 0 0);
-            temperatureMaster       1866.7;
-            temperatureSlave        200;
+            temperatureFront       1866.7;
+            temperatureBack        200;
             forceWriteInterval     1e-6;
         }
     }
