@@ -31,7 +31,7 @@ All notable repository changes are documented here.
 ### Changed
 
 - Standardized probability documentation: `Pr` is reflection probability and `Pt = 1 - Pr`.
-- Renamed example-case patches from `statGrid_master/statGrid_slave` to `plate_front/plate_back`.
+- Renamed example-case patches to `plate_front/plate_back` physical-side naming.
 - Renamed external case patch from `flow` to `farField`.
 - Corrected `temperatureFront` value to `1866.7` K in revised two-sided cases.
 - Replaced ambiguous public descriptions with implemented features: side-dependent membrane temperatures and bidirectional transmitted-particle flux accounting.
@@ -40,7 +40,7 @@ All notable repository changes are documented here.
 
 ### Removed
 
-- Legacy public terminology based on master/slave physical-side naming.
+- Legacy public terminology based on internal coupled-patch naming.
 - Compiled `uniGasFoam` executable and `.so` binary.
 - Generated `constant/polyMesh/` directories.
 - Duplicate source snapshots and temporary development dictionary files.
