@@ -16,14 +16,6 @@ License
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
 
-    OpenFOAM is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-    for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OpenFOAM.  If not, see <http://www.gnu.org/licenses/>.
-
 Class
     Foam::uniGasReflectiveParticleMembranePatch
 
@@ -40,8 +32,6 @@ Description
 
         front = configured/control cyclic patch
         back  = cyclic neighbour patch
-
-    The current research implementation remains under validation.
 
 Usage
     Example boundary-condition specification:
@@ -64,9 +54,6 @@ Usage
     }
     \endverbatim
 
-    Legacy temperatureMaster/temperatureSlave dictionary keys are accepted
-    as fallbacks for compatibility.
-
 SourceFiles
     uniGasReflectiveParticleMembranePatch.C
 
@@ -80,116 +67,78 @@ SourceFiles
 #include "polyMesh.H"
 #include "uniGasCloud.H"
 
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
 namespace Foam
 {
-
-/*---------------------------------------------------------------------------*\
-             Class uniGasReflectiveParticleMembranePatch Declaration
-\*---------------------------------------------------------------------------*/
 
 class uniGasReflectiveParticleMembranePatch
 :
     public uniGasCyclicBoundary
 {
-    // Private data
+    dictionary propsDict_;
 
-        dictionary propsDict_;
+    scalar p_;
 
-        //- Reflection probability Pr; transmission probability Pt = 1 - Pr
-        scalar p_;
+    //- Temperature used on the physical front side
+    scalar temperatureFront_;
 
-        //- Temperature used on the physical front side (control patch)
-        scalar temperatureFront_;
+    //- Temperature used on the physical back side
+    scalar temperatureBack_;
 
-        //- Temperature used on the physical back side (neighbour patch)
-        scalar temperatureBack_;
+    vector velocity_;
 
-        vector velocity_;
+    label nReflections_;
+    label nTransmissions_;
 
-        label nReflections_;
+    //- Physical front-to-back/back-to-front transmission counts
+    label nTransFrontToBack_;
+    label nTransBackToFront_;
 
-        //- Number of particles transmitted during the current reporting interval
-        label nTransmissions_;
+    scalar transmittedNpFrontToBack_;
+    scalar transmittedNpBackToFront_;
 
-        //- Physical front-to-back/back-to-front transmission counts
-        label nTransFrontToBack_;
-        label nTransBackToFront_;
+    scalar transmittedMassFrontToBack_;
+    scalar transmittedMassBackToFront_;
 
-        scalar transmittedNpFrontToBack_;
-        scalar transmittedNpBackToFront_;
+    vector transmittedMomentum_;
+    vector membraneImpulse_;
 
-        scalar transmittedMassFrontToBack_;
-        scalar transmittedMassBackToFront_;
-
-        vector transmittedMomentum_;
-
-        //- Local accumulated impulse transferred from particles to membrane
-        vector membraneImpulse_;
-
-        //- Time of last local force report
-        scalar lastReportTime_;
-
-        //- Local force write interval
-        scalar forceWriteInterval_;
-
-        //- Has the local force file been initialised
-        bool forceFileInitialised_;
+    scalar lastReportTime_;
+    scalar forceWriteInterval_;
+    bool forceFileInitialised_;
 
 public:
 
-    //- Runtime type information
     TypeName("uniGasReflectiveParticleMembranePatch");
 
-    // Constructors
+    uniGasReflectiveParticleMembranePatch
+    (
+        const polyMesh& mesh,
+        uniGasCloud& cloud,
+        const dictionary& dict
+    );
 
-        //- Construct from components
-        uniGasReflectiveParticleMembranePatch
-        (
-            const polyMesh& mesh,
-            uniGasCloud& cloud,
-            const dictionary& dict
-        );
-
-
-    //- Destructor
     virtual ~uniGasReflectiveParticleMembranePatch() = default;
 
+    void calculateProperties();
+    void writeLocalMembraneForce();
+    void initialConfiguration();
 
-    // Member Functions
+    void controlMol
+    (
+        uniGasParcel& mol,
+        uniGasParcel::trackingData& td
+    );
 
-        void calculateProperties();
+    void output
+    (
+        const fileName& fixedPathName,
+        const fileName& timePath
+    );
 
-        void writeLocalMembraneForce();
-
-        //- Create an initial configuration
-        void initialConfiguration();
-
-        //- Control the molecules
-        void controlMol
-        (
-            uniGasParcel& mol,
-            uniGasParcel::trackingData& td
-        );
-
-        //- Output data
-        void output
-        (
-            const fileName& fixedPathName,
-            const fileName& timePath
-        );
-
-        //- Update properties from a modified dictionary
-        void updateProperties(const dictionary& dict);
+    void updateProperties(const dictionary& dict);
 };
 
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
-
-} // End namespace Foam
-
-// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+}
 
 #endif
 
