@@ -29,36 +29,54 @@ Thus:
 - `Pr = 0.5`: reflection and transmission have equal probability;
 - `Pr = 1`: every incident particle is reflected and the membrane reaches the no-transmission limit.
 
+## Front/Back Side Convention
+
+For the revised single-entry two-sided membrane setup:
+
+```text
+front = configured/control cyclic patch
+back  = cyclic neighbour patch
+```
+
+In the included Tdual cases:
+
+```text
+front -> plate_front
+back  -> plate_back
+```
+
+These front/back labels describe the physical membrane sides. Internal coupled-boundary implementation details are not used as physical direction labels.
+
 ## Reflected Particles
 
 When a particle is selected for reflection, the current implementation samples a diffuse reflected velocity using the membrane-side temperature. The reflected velocity is constructed in a local basis consisting of the face normal and two tangential directions, then the specified membrane velocity is added.
 
-The revised implementation supports separate temperatures for the two coupled sides:
+The revised implementation supports separate temperatures for the two physical sides:
 
 ```text
-temperatureMaster
-temperatureSlave
-```
-
-In the example cases:
-
-```text
-master -> plate_front
-slave  -> plate_back
+temperatureFront
+temperatureBack
 ```
 
 ## Transmitted Particles
 
-When a particle is not selected for reflection, it is transmitted through the coupled membrane. The code records transmission statistics separately for the two directions:
+When a particle is not selected for reflection, it is transmitted through the coupled membrane. The code records transmission statistics separately for the two physical directions:
 
-- front/master to back/slave (`A -> B`);
-- back/slave to front/master (`B -> A`).
+- front to back (`FrontToBack`);
+- back to front (`BackToFront`).
 
 The recorded quantities include transmitted parcel counts, represented-particle counts, mass, and signed momentum contributions.
 
 ## Bidirectional Flux Accounting
 
 The current source accumulates transmitted quantities independently in both directions and writes local membrane-flux records. The post-processing utility `tools/sumMembraneFlux_binned.py` combines processor-local output and reports both absolute and net flux quantities.
+
+For represented-particle number and mass, the current convention is:
+
+```text
+absolute = FrontToBack + BackToFront
+net      = FrontToBack - BackToFront
+```
 
 This repository historically used the label `Tdual`. In the public documentation, the implemented feature is described more explicitly as **side-dependent membrane temperatures with bidirectional transmitted-particle flux accounting** rather than assigning a broader formal model name that has not yet been independently validated.
 
