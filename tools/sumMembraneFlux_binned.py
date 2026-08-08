@@ -55,12 +55,12 @@ def main():
         "nRecords": 0,
         "areaTime": 0.0,
         "areaByProc": {},
-        "nTransAtoB": 0.0,
-        "nTransBtoA": 0.0,
-        "npAtoB": 0.0,
-        "npBtoA": 0.0,
-        "massAtoB": 0.0,
-        "massBtoA": 0.0,
+        "nTransFrontToBack": 0.0,
+        "nTransBackToFront": 0.0,
+        "npFrontToBack": 0.0,
+        "npBackToFront": 0.0,
+        "massFrontToBack": 0.0,
+        "massBackToFront": 0.0,
         "momentumX_areaTime": 0.0,
         "momentumY_areaTime": 0.0,
         "momentumZ_areaTime": 0.0,
@@ -88,14 +88,16 @@ def main():
                     proc = int(float(parts[2]))
                     local_area = float(parts[3])
 
-                    n_trans_AtoB = float(parts[4])
-                    n_trans_BtoA = float(parts[5])
+                    # Columns 4-9 follow the current membraneFlux.dat layout:
+                    # physical front->back and back->front transmission totals.
+                    n_trans_front_to_back = float(parts[4])
+                    n_trans_back_to_front = float(parts[5])
 
-                    np_AtoB = float(parts[6])
-                    np_BtoA = float(parts[7])
+                    np_front_to_back = float(parts[6])
+                    np_back_to_front = float(parts[7])
 
-                    mass_AtoB = float(parts[8])
-                    mass_BtoA = float(parts[9])
+                    mass_front_to_back = float(parts[8])
+                    mass_back_to_front = float(parts[9])
 
                     momentum_flux_x = float(parts[14])
                     momentum_flux_y = float(parts[15])
@@ -113,20 +115,20 @@ def main():
                 rec["nRecords"] += 1
                 rec["areaTime"] += area_dt
 
-                # processor-local area is constant; keep one value per processor
+                # Processor-local area is constant; keep one value per processor.
                 rec["areaByProc"][proc] = max(
                     rec["areaByProc"].get(proc, 0.0),
                     local_area
                 )
 
-                rec["nTransAtoB"] += n_trans_AtoB
-                rec["nTransBtoA"] += n_trans_BtoA
+                rec["nTransFrontToBack"] += n_trans_front_to_back
+                rec["nTransBackToFront"] += n_trans_back_to_front
 
-                rec["npAtoB"] += np_AtoB
-                rec["npBtoA"] += np_BtoA
+                rec["npFrontToBack"] += np_front_to_back
+                rec["npBackToFront"] += np_back_to_front
 
-                rec["massAtoB"] += mass_AtoB
-                rec["massBtoA"] += mass_BtoA
+                rec["massFrontToBack"] += mass_front_to_back
+                rec["massBackToFront"] += mass_back_to_front
 
                 # Convert local flux back to momentum contribution,
                 # then recompute global flux after summation.
@@ -141,9 +143,9 @@ def main():
     with out_file.open("w") as out:
         out.write(
             "# time nRecords totalArea effectiveDuration areaTime "
-            "nTransAtoB nTransBtoA "
-            "transmittedNpAtoB transmittedNpBtoA "
-            "transmittedMassAtoB transmittedMassBtoA "
+            "nTransFrontToBack nTransBackToFront "
+            "transmittedNpFrontToBack transmittedNpBackToFront "
+            "transmittedMassFrontToBack transmittedMassBackToFront "
             "absNumberFlux netNumberFlux "
             "absMassFlux netMassFlux "
             "momentumFluxX momentumFluxY momentumFluxZ\n"
@@ -160,11 +162,11 @@ def main():
 
             effective_duration = area_time/total_area if total_area > 0 else 0.0
 
-            abs_np = rec["npAtoB"] + rec["npBtoA"]
-            net_np = rec["npAtoB"] - rec["npBtoA"]
+            abs_np = rec["npFrontToBack"] + rec["npBackToFront"]
+            net_np = rec["npFrontToBack"] - rec["npBackToFront"]
 
-            abs_mass = rec["massAtoB"] + rec["massBtoA"]
-            net_mass = rec["massAtoB"] - rec["massBtoA"]
+            abs_mass = rec["massFrontToBack"] + rec["massBackToFront"]
+            net_mass = rec["massFrontToBack"] - rec["massBackToFront"]
 
             abs_number_flux = abs_np/area_time
             net_number_flux = net_np/area_time
@@ -182,12 +184,12 @@ def main():
                 f"{total_area:.12e} "
                 f"{effective_duration:.12e} "
                 f"{area_time:.12e} "
-                f"{int(round(rec['nTransAtoB']))} "
-                f"{int(round(rec['nTransBtoA']))} "
-                f"{rec['npAtoB']:.12e} "
-                f"{rec['npBtoA']:.12e} "
-                f"{rec['massAtoB']:.12e} "
-                f"{rec['massBtoA']:.12e} "
+                f"{int(round(rec['nTransFrontToBack']))} "
+                f"{int(round(rec['nTransBackToFront']))} "
+                f"{rec['npFrontToBack']:.12e} "
+                f"{rec['npBackToFront']:.12e} "
+                f"{rec['massFrontToBack']:.12e} "
+                f"{rec['massBackToFront']:.12e} "
                 f"{abs_number_flux:.12e} "
                 f"{net_number_flux:.12e} "
                 f"{abs_mass_flux:.12e} "
