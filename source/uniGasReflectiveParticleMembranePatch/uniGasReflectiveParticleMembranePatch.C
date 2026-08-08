@@ -57,43 +57,49 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
     uniGasCyclicBoundary(mesh, cloud, dict),
     propsDict_(dict.subDict(typeName + "Properties")),
     p_(propsDict_.get<scalar>("reflectionProbability")),
-    temperatureMaster_
+    temperatureFront_
     (
         propsDict_.getOrDefault<scalar>
         (
-            "temperatureMaster",
-            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+            "temperatureFront",
+            propsDict_.getOrDefault<scalar>
+            (
+                "temperatureMaster",
+                propsDict_.getOrDefault<scalar>("temperature", 200.0)
+            )
         )
     ),
-    temperatureSlave_
+    temperatureBack_
     (
         propsDict_.getOrDefault<scalar>
         (
-            "temperatureSlave",
-            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+            "temperatureBack",
+            propsDict_.getOrDefault<scalar>
+            (
+                "temperatureSlave",
+                propsDict_.getOrDefault<scalar>("temperature", 200.0)
+            )
         )
     ),
     velocity_(propsDict_.get<vector>("velocity")),
     nReflections_(0),
     nTransmissions_(0),
-    nTransAtoB_(0),
-    nTransBtoA_(0),
-    transmittedNpAtoB_(0.0),
-    transmittedNpBtoA_(0.0),
-    transmittedMassAtoB_(0.0),
-    transmittedMassBtoA_(0.0),
+    nTransFrontToBack_(0),
+    nTransBackToFront_(0),
+    transmittedNpFrontToBack_(0.0),
+    transmittedNpBackToFront_(0.0),
+    transmittedMassFrontToBack_(0.0),
+    transmittedMassBackToFront_(0.0),
     transmittedMomentum_(Zero),
-    
-    //
     membraneImpulse_(Zero),
     lastReportTime_(mesh.time().value()),
     forceWriteInterval_
     (
-       propsDict_.lookupOrDefault<scalar>
-       (
-          "forceWriteInterval",
-          mesh.time().deltaTValue()
-       )
+        propsDict_.lookupOrDefault<scalar>
+        (
+            "forceWriteInterval",
+            mesh.time().deltaTValue()
+        )
     ),
     forceFileInitialised_(false)
 {
@@ -126,7 +132,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
     );
 
     const vector membraneForce = membraneImpulse/max(reportDeltaT, VSMALL);
-
     const label nTotal = nReflections + nTransmissions;
 
     if (Pstream::master())
@@ -153,24 +158,22 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
             << endl;
     }
 
-    // Reset interval statistics after reporting
     membraneImpulse_ = Zero;
     nReflections_ = 0;
     nTransmissions_ = 0;
 
-    nTransAtoB_ = 0;
-    nTransBtoA_ = 0;
+    nTransFrontToBack_ = 0;
+    nTransBackToFront_ = 0;
 
-    transmittedNpAtoB_ = 0.0;
-    transmittedNpBtoA_ = 0.0;
+    transmittedNpFrontToBack_ = 0.0;
+    transmittedNpBackToFront_ = 0.0;
 
-    transmittedMassAtoB_ = 0.0;
-    transmittedMassBtoA_ = 0.0;
+    transmittedMassFrontToBack_ = 0.0;
+    transmittedMassBackToFront_ = 0.0;
 
     transmittedMomentum_ = Zero;
     lastReportTime_ = currentTime;
 }
-
 
 
 void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
@@ -189,7 +192,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
     );
 
     const vector localForce = membraneImpulse_/max(reportDeltaT, VSMALL);
-
     const label procNo = Pstream::myProcNo();
 
     fileName outDir =
@@ -229,10 +231,10 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
         << localForce.y() << " "
         << localForce.z()
         << std::endl;
-    // Write transmitted-particle flux statistics
+
+    // Write transmitted-particle flux statistics.
     {
         scalar localArea = 0.0;
-
         const vectorField& Sf = mesh_.faceAreas();
 
         forAll(coupledFacesA_, i)
@@ -250,18 +252,20 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
 
         const scalar areaDt = max(localArea*reportDeltaT, VSMALL);
 
-        const scalar absNp = transmittedNpAtoB_ + transmittedNpBtoA_;
-        const scalar netNp = transmittedNpAtoB_ - transmittedNpBtoA_;
+        const scalar absNp =
+            transmittedNpFrontToBack_ + transmittedNpBackToFront_;
+        const scalar netNp =
+            transmittedNpFrontToBack_ - transmittedNpBackToFront_;
 
-        const scalar absMass = transmittedMassAtoB_ + transmittedMassBtoA_;
-        const scalar netMass = transmittedMassAtoB_ - transmittedMassBtoA_;
+        const scalar absMass =
+            transmittedMassFrontToBack_ + transmittedMassBackToFront_;
+        const scalar netMass =
+            transmittedMassFrontToBack_ - transmittedMassBackToFront_;
 
         const scalar absNumberFlux = absNp/areaDt;
         const scalar netNumberFlux = netNp/areaDt;
-
         const scalar absMassFlux = absMass/areaDt;
         const scalar netMassFlux = netMass/areaDt;
-
         const vector momentumFlux = transmittedMomentum_/areaDt;
 
         fileName fluxDir =
@@ -287,9 +291,9 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
         if (!fluxFileExists)
         {
             fs  << "# time dt proc localArea "
-                << "nTransAtoB nTransBtoA "
-                << "transmittedNpAtoB transmittedNpBtoA "
-                << "transmittedMassAtoB transmittedMassBtoA "
+                << "nTransFrontToBack nTransBackToFront "
+                << "transmittedNpFrontToBack transmittedNpBackToFront "
+                << "transmittedMassFrontToBack transmittedMassBackToFront "
                 << "absNumberFlux netNumberFlux "
                 << "absMassFlux netMassFlux "
                 << "momentumFluxX momentumFluxY momentumFluxZ"
@@ -300,12 +304,12 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << reportDeltaT << " "
             << procNo << " "
             << localArea << " "
-            << nTransAtoB_ << " "
-            << nTransBtoA_ << " "
-            << transmittedNpAtoB_ << " "
-            << transmittedNpBtoA_ << " "
-            << transmittedMassAtoB_ << " "
-            << transmittedMassBtoA_ << " "
+            << nTransFrontToBack_ << " "
+            << nTransBackToFront_ << " "
+            << transmittedNpFrontToBack_ << " "
+            << transmittedNpBackToFront_ << " "
+            << transmittedMassFrontToBack_ << " "
+            << transmittedMassBackToFront_ << " "
             << absNumberFlux << " "
             << netNumberFlux << " "
             << absMassFlux << " "
@@ -316,25 +320,22 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << std::endl;
     }
 
-
-
     membraneImpulse_ = Zero;
     nReflections_ = 0;
     nTransmissions_ = 0;
 
-    nTransAtoB_ = 0;
-    nTransBtoA_ = 0;
+    nTransFrontToBack_ = 0;
+    nTransBackToFront_ = 0;
 
-    transmittedNpAtoB_ = 0.0;
-    transmittedNpBtoA_ = 0.0;
+    transmittedNpFrontToBack_ = 0.0;
+    transmittedNpBackToFront_ = 0.0;
 
-    transmittedMassAtoB_ = 0.0;
-    transmittedMassBtoA_ = 0.0;
+    transmittedMassFrontToBack_ = 0.0;
+    transmittedMassBackToFront_ = 0.0;
 
     transmittedMomentum_ = Zero;
     lastReportTime_ = currentTime;
 }
-
 
 
 void Foam::uniGasReflectiveParticleMembranePatch::initialConfiguration()
@@ -351,14 +352,17 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
 
     vector nF = mesh_.faceAreas()[faceI];
     vector nw = p.normal();
-
     vector& U = p.U();
 
-    //
     const vector preU = U;
 
-    label fA = coupledFacesA_.find(faceI);
-    label fB = coupledFacesB_.find(faceI);
+    // coupledFacesA_ is the configured/control patch (front), while
+    // coupledFacesB_ is its cyclic neighbour patch (back).
+    const label frontFaceIndex = coupledFacesA_.find(faceI);
+    const label backFaceIndex = coupledFacesB_.find(faceI);
+
+    const bool onFront = (frontFaceIndex != -1);
+    const bool onBack = (backFaceIndex != -1);
 
     nF /= mag(nF);
     nw /= mag(nw);
@@ -366,207 +370,116 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     scalar U_dot_nw = U & nw;
     vector Ut = U - U_dot_nw*nw;
 
-    label typeId = p.typeId();
-
-    // Wall temperature is selected separately for fA/fB sides.
-
-    scalar mass = cloud_.constProps(typeId).mass();
-
+    const label typeId = p.typeId();
+    const scalar mass = cloud_.constProps(typeId).mass();
     Random& rndGen = cloud_.rndGen();
 
-    scalar d = nF & U;
+    // d describes the velocity relative to the normal of the *current*
+    // tracking face.  For a local cyclic crossing the current face is the
+    // receiving face; for a processor-cyclic crossing it can still be the
+    // sending face.  Therefore d alone is not a physical front/back label.
+    const scalar d = nF & U;
 
-    if(d > 0) // front/master side of the coupled membrane
+    const bool incidentFromFront =
+        (onFront && d > 0) || (onBack && d < 0);
+
+    const bool incidentFromBack =
+        (onBack && d > 0) || (onFront && d < 0);
+
+    if (!incidentFromFront && !incidentFromBack)
     {
-        if(fA != -1)
-        {
-            const scalar T = temperatureMaster_;
-            scalar pRandom = rndGen.sample01<scalar>();
-
-            if( pRandom <= p_ ) // reflect molecule
-            {
-
-                // Construct a robust tangential basis.
-                // Component-wise scaling cannot produce a tangential component
-                // when the incident velocity is exactly parallel to the face normal.
-                vector tw1 = Ut;
-
-                if (mag(tw1) < SMALL)
-                {
-                    // Select an axis that is not parallel to nw
-                    const vector axis =
-                        (mag(nw.x()) < 0.9)
-                      ? vector(1, 0, 0)
-                      : vector(0, 1, 0);
-
-                    // Project the selected axis onto the tangential plane
-                    tw1 = axis - (axis & nw)*nw;
-                }
-
-                tw1 /= mag(tw1);
-
-                // Second tangential unit vector
-                vector tw2 = nw ^ tw1;
-                tw2 /= mag(tw2);
-
-
-                
-                // Return direction must be opposite to the incident
-                // face-normal direction.
-                const vector nReturn = (d > 0) ? -nF : nF;
-
-                const scalar normalSpeed =
-                    sqrt
-                    (
-                        -2.0
-                       *log
-                        (
-                            max
-                            (
-                                1
-                              - rndGen.sample01<scalar>(),
-                                VSMALL
-                            )
-                        )
-                    );
-
-                // Diffuse velocity relative to the membrane.
-                U =
-                    sqrt(physicoChemical::k.value()*T/mass)
-                   *(
-                        rndGen.GaussNormal<scalar>()*tw1
-                      + rndGen.GaussNormal<scalar>()*tw2
-                      + normalSpeed*nReturn
-                    );
-
-                // Transform from membrane-relative to absolute velocity.
-                U += velocity_;
-
-
-		// Momentum transferred from particle to membrane.
-		// Particle momentum change is m*(U - preU), therefore
-		// membrane impulse is -m*(U - preU) = m*(preU - U).
-		membraneImpulse_ += cloud_.nParticle()*mass*(preU - U);
-
-
-                td.switchProcessor = false;
-
-                ++nReflections_;
-
-        writeLocalMembraneForce();
-            }
-            else
-            {
-                ++nTransmissions_;
-
-                // Transmission statistics: front/master side to back/slave side
-                ++nTransAtoB_;
-
-                const scalar Np = cloud_.nParticle();
-
-                transmittedNpAtoB_ += Np;
-                transmittedMassAtoB_ += Np*mass;
-                transmittedMomentum_ += Np*mass*preU;
-
-                writeLocalMembraneForce();
-            }
-        }
+        return;
     }
-    else if (d < 0) // back/slave side of the coupled membrane
+
+    const scalar T =
+        incidentFromFront ? temperatureFront_ : temperatureBack_;
+
+    const scalar pRandom = rndGen.sample01<scalar>();
+
+    if (pRandom <= p_) // diffuse reflection
     {
-        if(fB != -1)
+        // Construct a robust tangential basis.  Component-wise scaling
+        // cannot create a tangential component when the incident velocity is
+        // exactly parallel to the face normal.
+        vector tw1 = Ut;
+
+        if (mag(tw1) < SMALL)
         {
-            const scalar T = temperatureSlave_;
-            scalar pRandom = rndGen.sample01<scalar>();
+            const vector axis =
+                (mag(nw.x()) < 0.9)
+              ? vector(1, 0, 0)
+              : vector(0, 1, 0);
 
-            if( pRandom <= p_ ) // reflect molecule
-            {
+            tw1 = axis - (axis & nw)*nw;
+        }
 
-                // Construct a robust tangential basis.
-                // Component-wise scaling cannot produce a tangential component
-                // when the incident velocity is exactly parallel to the face normal.
-                vector tw1 = Ut;
+        tw1 /= mag(tw1);
 
-                if (mag(tw1) < SMALL)
-                {
-                    // Select an axis that is not parallel to nw
-                    const vector axis =
-                        (mag(nw.x()) < 0.9)
-                      ? vector(1, 0, 0)
-                      : vector(0, 1, 0);
+        vector tw2 = nw ^ tw1;
+        tw2 /= mag(tw2);
 
-                    // Project the selected axis onto the tangential plane
-                    tw1 = axis - (axis & nw)*nw;
-                }
+        // The return direction is defined from the current tracking face.
+        // This preserves the original local/processor-cyclic handling while
+        // temperature selection is now tied to the physical incident side.
+        const vector nReturn = (d > 0) ? -nF : nF;
 
-                tw1 /= mag(tw1);
-
-                // Second tangential unit vector
-                vector tw2 = nw ^ tw1;
-                tw2 /= mag(tw2);
-
-
-                
-                // Return direction must be opposite to the incident
-                // face-normal direction.
-                const vector nReturn = (d > 0) ? -nF : nF;
-
-                const scalar normalSpeed =
-                    sqrt
+        const scalar normalSpeed =
+            sqrt
+            (
+                -2.0
+               *log
+                (
+                    max
                     (
-                        -2.0
-                       *log
-                        (
-                            max
-                            (
-                                1
-                              - rndGen.sample01<scalar>(),
-                                VSMALL
-                            )
-                        )
-                    );
+                        1 - rndGen.sample01<scalar>(),
+                        VSMALL
+                    )
+                )
+            );
 
-                // Diffuse velocity relative to the membrane.
-                U =
-                    sqrt(physicoChemical::k.value()*T/mass)
-                   *(
-                        rndGen.GaussNormal<scalar>()*tw1
-                      + rndGen.GaussNormal<scalar>()*tw2
-                      + normalSpeed*nReturn
-                    );
+        U =
+            sqrt(physicoChemical::k.value()*T/mass)
+           *(
+                rndGen.GaussNormal<scalar>()*tw1
+              + rndGen.GaussNormal<scalar>()*tw2
+              + normalSpeed*nReturn
+            );
 
-                // Transform from membrane-relative to absolute velocity.
-                U += velocity_;
+        U += velocity_;
 
+        // Momentum transferred from particle to membrane.
+        membraneImpulse_ +=
+            cloud_.nParticle()*mass*(preU - U);
 
-		// Momentum transferred from particle to membrane.
-		// Particle momentum change is m*(U - preU), therefore
-		// membrane impulse is -m*(U - preU) = m*(preU - U).
-		membraneImpulse_ += cloud_.nParticle()*mass*(preU - U);
-
-
-                td.switchProcessor = false;
-
-                ++nReflections_;
+        td.switchProcessor = false;
+        ++nReflections_;
 
         writeLocalMembraneForce();
-            }
-            else
-            {
-                ++nTransmissions_;
+    }
+    else // transmission
+    {
+        ++nTransmissions_;
 
-                // Transmission statistics: back/slave side to front/master side
-                ++nTransBtoA_;
+        const scalar Np = cloud_.nParticle();
 
-                const scalar Np = cloud_.nParticle();
-
-                transmittedNpBtoA_ += Np;
-                transmittedMassBtoA_ += Np*mass;
-                transmittedMomentum_ -= Np*mass*preU;
-
-                writeLocalMembraneForce();
-            }
+        if (incidentFromFront)
+        {
+            // Physical transmission: front -> back.
+            ++nTransFrontToBack_;
+            transmittedNpFrontToBack_ += Np;
+            transmittedMassFrontToBack_ += Np*mass;
+            transmittedMomentum_ += Np*mass*preU;
         }
+        else
+        {
+            // Physical transmission: back -> front.
+            ++nTransBackToFront_;
+            transmittedNpBackToFront_ += Np;
+            transmittedMassBackToFront_ += Np*mass;
+            transmittedMomentum_ -= Np*mass*preU;
+        }
+
+        writeLocalMembraneForce();
     }
 }
 
@@ -577,7 +490,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::output
     const fileName& timePath
 )
 {
-
     calculateProperties();
 }
 
@@ -587,7 +499,7 @@ void Foam::uniGasReflectiveParticleMembranePatch::updateProperties
     const dictionary& dict
 )
 {
-    // the main properties should be updated first
+    // The main properties should be updated first.
     uniGasCyclicBoundary::updateProperties(dict);
 }
 
