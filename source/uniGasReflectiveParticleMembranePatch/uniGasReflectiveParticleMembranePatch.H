@@ -64,9 +64,6 @@ Usage
     }
     \endverbatim
 
-    Legacy temperatureMaster/temperatureSlave dictionary keys are accepted
-    as fallbacks for compatibility.
-
 SourceFiles
     uniGasReflectiveParticleMembranePatch.C
 

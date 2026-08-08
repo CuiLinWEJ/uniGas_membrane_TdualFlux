@@ -11,7 +11,7 @@ The current implementation treats an incident simulation particle as either:
 - **reflected**, with probability `Pr`; or
 - **transmitted**, with probability `Pt = 1 - Pr`.
 
-For the revised two-sided implementation, the front/master and back/slave sides may use different membrane temperatures. The code also records transmitted-particle statistics in both directions and accumulates membrane impulse for aerodynamic-force evaluation.
+For the revised two-sided implementation, the physical front and back sides may use different membrane temperatures. The code also records transmitted-particle statistics in both directions and accumulates membrane impulse for aerodynamic-force evaluation.
 
 This repository is a **research prototype**. It has been compiled and exercised with the included development/comparison cases, but comprehensive physical validation is still in progress.
 
@@ -37,11 +37,18 @@ The example cases use descriptive patch names:
 
 | Patch | Meaning |
 |---|---|
-| `plate_front` | Front/master side of the flat plate or membrane |
-| `plate_back` | Back/slave side of the flat plate or membrane |
+| `plate_front` | Physical front side of the flat plate or membrane |
+| `plate_back` | Physical back side of the flat plate or membrane |
 | `farField` | External inflow/outflow boundary |
 
-Internally, the uniGasFoam coupled-boundary implementation still uses the terms **master** and **slave**; these correspond to `plate_front` and `plate_back` in the included cases.
+For the revised single-entry two-sided membrane setup used in the Tdual cases:
+
+```text
+front = configured/control cyclic patch (`plate_front`)
+back  = cyclic neighbour patch (`plate_back`)
+```
+
+The public physical-direction convention is therefore always **front/back**. Internal coupled-boundary implementation details are not used as physical direction labels.
 
 ## Probability Convention
 

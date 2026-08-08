@@ -62,11 +62,7 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
         propsDict_.getOrDefault<scalar>
         (
             "temperatureFront",
-            propsDict_.getOrDefault<scalar>
-            (
-                "temperatureMaster",
-                propsDict_.getOrDefault<scalar>("temperature", 200.0)
-            )
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
         )
     ),
     temperatureBack_
@@ -74,11 +70,7 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
         propsDict_.getOrDefault<scalar>
         (
             "temperatureBack",
-            propsDict_.getOrDefault<scalar>
-            (
-                "temperatureSlave",
-                propsDict_.getOrDefault<scalar>("temperature", 200.0)
-            )
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
         )
     ),
     velocity_(propsDict_.get<vector>("velocity")),
