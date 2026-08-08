@@ -11,7 +11,7 @@ All notable repository changes are documented here.
 
 ### Planned
 
-- Add an automated upstream patch/integration workflow.
+- Add automated upstream patch/integration workflow.
 - Add reproducible benchmark and uncertainty results.
 
 ## [0.1.0] - 2026-08-07
@@ -19,7 +19,7 @@ All notable repository changes are documented here.
 ### Added
 
 - Post-thesis membrane-boundary source implementation.
-- Side-dependent master/slave temperatures.
+- Side-dependent front/back membrane temperatures.
 - Bidirectional transmitted-particle statistics.
 - Membrane impulse/force output.
 - Force and flux post-processing utilities.
@@ -33,17 +33,17 @@ All notable repository changes are documented here.
 - Standardized probability documentation: `Pr` is reflection probability and `Pt = 1 - Pr`.
 - Renamed example-case patches from `statGrid_master/statGrid_slave` to `plate_front/plate_back`.
 - Renamed external case patch from `flow` to `farField`.
-- Corrected `temperatureMaster` from `18666` K to `1866.7` K in the two revised V1 two-sided cases, consistent with the earlier case configuration.
-- Replaced the ambiguous public description `transient dual-flux` with the implemented features: side-dependent membrane temperatures and bidirectional transmitted-particle flux accounting.
-- Renamed internal/user-facing `Rejections` counters to `Transmissions` without changing reflection/transmission logic.
+- Corrected `temperatureFront` value to `1866.7` K in revised two-sided cases.
+- Replaced ambiguous public descriptions with implemented features: side-dependent membrane temperatures and bidirectional transmitted-particle flux accounting.
+- Renamed user-facing transmission counters to `FrontToBack` and `BackToFront`.
 - Made case `run.sh` scripts configurable via `OPENFOAM_BASHRC` and `NP`.
 
 ### Removed
 
+- Legacy public terminology based on master/slave physical-side naming.
 - Compiled `uniGasFoam` executable and `.so` binary.
 - Generated `constant/polyMesh/` directories.
 - Duplicate source snapshots and temporary development dictionary files.
-- Duplicated per-case post-processing scripts (centralized under `tools/`).
 
 ### Status
 
