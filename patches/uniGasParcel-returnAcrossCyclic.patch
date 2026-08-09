@@ -1,0 +1,40 @@
+diff --git a/src/lagrangian/uniGas/parcels/uniGasParcel.H b/src/lagrangian/uniGas/parcels/uniGasParcel.H
+--- a/src/lagrangian/uniGas/parcels/uniGasParcel.H
++++ b/src/lagrangian/uniGas/parcels/uniGasParcel.H
+@@ -414,7 +414,16 @@ public:
+             trackingData& td
+         );
+ 
++        //- Map a locally reflected parcel back across the cyclic interface.
++        //  This exposes particle::hitCyclicPatch() to cyclic boundary models
++        //  without duplicating OpenFOAM topology/transform logic.
++        void returnAcrossCyclic
++        (
++            uniGasCloud& cloud,
++            trackingData& td
++        );
++
+ 
+         //- Transform the physical properties of the particle
+         //  according to the given transformation tensor
+         void transformProperties(const tensor& T);
+diff --git a/src/lagrangian/uniGas/parcels/uniGasParcel.C b/src/lagrangian/uniGas/parcels/uniGasParcel.C
+--- a/src/lagrangian/uniGas/parcels/uniGasParcel.C
++++ b/src/lagrangian/uniGas/parcels/uniGasParcel.C
+@@ -145,6 +145,16 @@ void Foam::uniGasParcel::hitWallPatch
+ }
+ 
+ 
++void Foam::uniGasParcel::returnAcrossCyclic
++(
++    uniGasCloud& cloud,
++    trackingData& td
++)
++{
++    particle::hitCyclicPatch(cloud, td);
++}
++
++
+ void Foam::uniGasParcel::transformProperties
+ (
+     const tensor& T
