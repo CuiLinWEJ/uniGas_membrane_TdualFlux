@@ -7,15 +7,16 @@ authors:
     given-names: "Wei-Jun"
 repository-code: "https://github.com/CuiLinWEJ/uniGas_membrane_TdualFlux"
 url: "https://github.com/CuiLinWEJ/uniGas_membrane_TdualFlux"
-version: "0.1.0"
-date-released: 2026-08-07
+version: "0.2.0"
+date-released: 2026-08-10
 license: "GPL-3.0-or-later"
 abstract: >-
   A post-thesis research prototype containing modifications to a uniGasFoam
   permeable-membrane boundary implementation. The current source supports
   probabilistic reflection/transmission, side-dependent membrane temperatures,
-  bidirectional transmitted-particle statistics, and membrane-force output for
-  rarefied-gas simulations. Comprehensive physical validation is ongoing.
+  bidirectional transmitted-particle statistics, cyclic-direction rollback
+  handling, and membrane-force output for rarefied-gas simulations.
+  Comprehensive physical validation is ongoing.
 keywords:
   - DSMC
   - rarefied gas dynamics
@@ -31,6 +32,6 @@ preferred-citation:
     - family-names: "Lin"
       given-names: "Wei-Jun"
   title: "uniGas_membrane_TdualFlux"
-  version: "0.1.0"
-  date-released: 2026-08-07
+  version: "0.2.0"
+  date-released: 2026-08-10
   repository-code: "https://github.com/CuiLinWEJ/uniGas_membrane_TdualFlux"

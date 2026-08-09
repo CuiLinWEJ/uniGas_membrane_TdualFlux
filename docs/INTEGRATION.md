@@ -2,16 +2,28 @@
 
 ## Why the Full Solver Is Not Included
 
-This repository intentionally contains only the modified membrane-boundary source and research cases. It does not vendor a full copy of uniGasFoam/OpenFOAM.
+This repository intentionally contains only the modified membrane-boundary source, integration helper, research cases, tools, and documentation. It does not vendor a full copy of uniGasFoam/OpenFOAM.
 
 ## Source Files
 
-The modified implementation is located in:
+The modified membrane implementation is located in:
 
 ```text
 source/uniGasReflectiveParticleMembranePatch/
 ├── uniGasReflectiveParticleMembranePatch.C
 └── uniGasReflectiveParticleMembranePatch.H
+```
+
+The current cyclic-reflection rollback also requires a small public wrapper in upstream `uniGasParcel.H/.C`. The preferred installer is:
+
+```text
+patches/apply_uniGasParcel_returnAcrossCyclic.py
+```
+
+A traditional unified patch is also provided at:
+
+```text
+patches/uniGasParcel-returnAcrossCyclic.patch
 ```
 
 ## Case Configuration
@@ -38,21 +50,74 @@ back  = cyclic neighbour patch
 
 The terms front/back describe physical membrane sides. They should not be confused with OpenFOAM cyclic patch implementation terminology.
 
-## Integration Procedure
+## Required `uniGasParcel` Wrapper
 
-Because uniGasFoam layouts can differ by version:
+For a local cyclic crossing, OpenFOAM has already mapped the parcel to the receiving side before the membrane model is called. A reflected parcel therefore has to be mapped back to its incident side immediately. The membrane model calls:
 
-1. locate the existing `uniGasReflectiveParticleMembranePatch.C` and `.H`;
-2. compare the source with this repository version;
-3. apply the corresponding source modifications;
-4. rebuild the required uniGasFoam library and solver;
-5. run a no-transmission (`Pr100`) case before transmitting cases.
+```cpp
+p.returnAcrossCyclic(cloud_, td);
+```
 
-The source can be located with:
+The helper exposes the existing protected `particle::hitCyclicPatch()` behavior without duplicating OpenFOAM's topology/transform logic.
+
+From the repository root, apply the wrapper to a compatible uniGasFoam source tree:
+
+```bash
+python3 patches/apply_uniGasParcel_returnAcrossCyclic.py ~/OpenFOAM/uniGasFoam
+```
+
+The installer is idempotent: if the declaration or implementation is already present, it reports `[skip]` instead of adding a duplicate.
+
+The traditional patch can be used instead when the target source matches its context exactly:
+
+```bash
+cd ~/OpenFOAM/uniGasFoam
+patch -p1 < ~/OpenFOAM/uniGas_membrane_TdualFlux-github/patches/uniGasParcel-returnAcrossCyclic.patch
+```
+
+Do not apply both methods to an already modified tree. Prefer the Python installer when source formatting differs from the stored patch context.
+
+## Membrane Source Integration
+
+After the wrapper is present, copy the membrane source files into the corresponding uniGasFoam boundary directory. In the development layout used for verification:
+
+```bash
+SRC=~/OpenFOAM/uniGas_membrane_TdualFlux-github/source/uniGasReflectiveParticleMembranePatch
+DST=~/OpenFOAM/uniGasFoam/src/lagrangian/uniGas/boundaries/derived/cyclicBoundaries/uniGasReflectiveParticleMembranePatch
+
+cp "$SRC/uniGasReflectiveParticleMembranePatch.C" "$DST/"
+cp "$SRC/uniGasReflectiveParticleMembranePatch.H" "$DST/"
+```
+
+Because uniGasFoam layouts can differ by version, locate the existing membrane files first when the path differs:
 
 ```bash
 find /path/to/uniGasFoam -name 'uniGasReflectiveParticleMembranePatch.[CH]' -print
 ```
+
+## Rebuild
+
+The minimum library rebuild used in the verified development environment was:
+
+```bash
+source /usr/lib/openfoam/openfoam2412/etc/bashrc
+cd ~/OpenFOAM/uniGasFoam
+wmake libso src/lagrangian/uniGas
+```
+
+If the upstream uniGasFoam tree provides a project-level `Allwmake`, using that canonical build script is also appropriate for a clean rebuild.
+
+After rebuilding, confirm that `uniGasFoam` resolves the intended custom library, for example:
+
+```bash
+ldd "$(command -v uniGasFoam)" | grep -E 'libUniGas|libOpenFOAM'
+```
+
+## Recommended Regression Check
+
+Before production use, run the no-transmission `Pr100` case and at least one transmitting case. The v0.2.0 regression set additionally checks reversed flow to verify that the physical transmission direction reverses correctly.
+
+See [`VALIDATION.md`](VALIDATION.md) and [`../patches/APPLY_cyclic_direction_fix.md`](../patches/APPLY_cyclic_direction_fix.md) for the recorded regression results.
 
 ## Dictionary Notes
 
@@ -64,3 +129,7 @@ temperatureBack
 ```
 
 A single `temperature` entry may be used as a general fallback. Legacy physical-side key names are no longer supported.
+
+## Compatibility Status
+
+The integration has been compiled and exercised in the maintainer's OpenFOAM v2412 development environment. The exact upstream uniGasFoam commit is not yet pinned, so users integrating into a different uniGasFoam revision should review the patch context and independently rebuild/test the result.
