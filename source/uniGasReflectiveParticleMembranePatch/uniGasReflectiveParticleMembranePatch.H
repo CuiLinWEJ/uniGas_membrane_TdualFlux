@@ -114,6 +114,18 @@ class uniGasReflectiveParticleMembranePatch
         label nTransFrontToBack_;
         label nTransBackToFront_;
 
+        //- Raw controlMol face/sign encounter counts for diagnostics
+        label nRawFrontDPos_;
+        label nRawFrontDNeg_;
+        label nRawBackDPos_;
+        label nRawBackDNeg_;
+
+        //- Raw face/sign counts for particles entering the transmission branch
+        label nRawTransFrontDPos_;
+        label nRawTransFrontDNeg_;
+        label nRawTransBackDPos_;
+        label nRawTransBackDNeg_;
+
         scalar transmittedNpFrontToBack_;
         scalar transmittedNpBackToFront_;
 
