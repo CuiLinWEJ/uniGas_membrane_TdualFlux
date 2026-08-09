@@ -78,6 +78,14 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
     nTransmissions_(0),
     nTransFrontToBack_(0),
     nTransBackToFront_(0),
+    nRawFrontDPos_(0),
+    nRawFrontDNeg_(0),
+    nRawBackDPos_(0),
+    nRawBackDNeg_(0),
+    nRawTransFrontDPos_(0),
+    nRawTransFrontDNeg_(0),
+    nRawTransBackDPos_(0),
+    nRawTransBackDNeg_(0),
     transmittedNpFrontToBack_(0.0),
     transmittedNpBackToFront_(0.0),
     transmittedMassFrontToBack_(0.0),
@@ -156,6 +164,16 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
 
     nTransFrontToBack_ = 0;
     nTransBackToFront_ = 0;
+
+    nRawFrontDPos_ = 0;
+    nRawFrontDNeg_ = 0;
+    nRawBackDPos_ = 0;
+    nRawBackDNeg_ = 0;
+
+    nRawTransFrontDPos_ = 0;
+    nRawTransFrontDNeg_ = 0;
+    nRawTransBackDPos_ = 0;
+    nRawTransBackDNeg_ = 0;
 
     transmittedNpFrontToBack_ = 0.0;
     transmittedNpBackToFront_ = 0.0;
@@ -288,7 +306,10 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
                 << "transmittedMassFrontToBack transmittedMassBackToFront "
                 << "absNumberFlux netNumberFlux "
                 << "absMassFlux netMassFlux "
-                << "momentumFluxX momentumFluxY momentumFluxZ"
+                << "momentumFluxX momentumFluxY momentumFluxZ "
+                << "rawFrontDPos rawFrontDNeg rawBackDPos rawBackDNeg "
+                << "rawTransFrontDPos rawTransFrontDNeg "
+                << "rawTransBackDPos rawTransBackDNeg"
                 << std::endl;
         }
 
@@ -308,7 +329,15 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << netMassFlux << " "
             << momentumFlux.x() << " "
             << momentumFlux.y() << " "
-            << momentumFlux.z()
+            << momentumFlux.z() << " "
+            << nRawFrontDPos_ << " "
+            << nRawFrontDNeg_ << " "
+            << nRawBackDPos_ << " "
+            << nRawBackDNeg_ << " "
+            << nRawTransFrontDPos_ << " "
+            << nRawTransFrontDNeg_ << " "
+            << nRawTransBackDPos_ << " "
+            << nRawTransBackDNeg_
             << std::endl;
     }
 
@@ -318,6 +347,16 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
 
     nTransFrontToBack_ = 0;
     nTransBackToFront_ = 0;
+
+    nRawFrontDPos_ = 0;
+    nRawFrontDNeg_ = 0;
+    nRawBackDPos_ = 0;
+    nRawBackDNeg_ = 0;
+
+    nRawTransFrontDPos_ = 0;
+    nRawTransFrontDNeg_ = 0;
+    nRawTransBackDPos_ = 0;
+    nRawTransBackDNeg_ = 0;
 
     transmittedNpFrontToBack_ = 0.0;
     transmittedNpBackToFront_ = 0.0;
@@ -366,11 +405,28 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     const scalar mass = cloud_.constProps(typeId).mass();
     Random& rndGen = cloud_.rndGen();
 
-    // d describes the velocity relative to the normal of the *current*
-    // tracking face.  For a local cyclic crossing the current face is the
-    // receiving face; for a processor-cyclic crossing it can still be the
-    // sending face.  Therefore d alone is not a physical front/back label.
+    // d describes the velocity relative to the normal of the current
+    // tracking face.  Record the raw face/sign combination before applying
+    // the diagnostic gating so receiving/sending-side behaviour is visible.
     const scalar d = nF & U;
+
+    if (onFront && d > 0)
+    {
+        ++nRawFrontDPos_;
+    }
+    else if (onFront && d < 0)
+    {
+        ++nRawFrontDNeg_;
+    }
+
+    if (onBack && d > 0)
+    {
+        ++nRawBackDPos_;
+    }
+    else if (onBack && d < 0)
+    {
+        ++nRawBackDNeg_;
+    }
 
     const bool incidentFromFront =
         onFront && d > 0;
@@ -451,6 +507,24 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     else // transmission
     {
         ++nTransmissions_;
+
+        if (onFront && d > 0)
+        {
+            ++nRawTransFrontDPos_;
+        }
+        else if (onFront && d < 0)
+        {
+            ++nRawTransFrontDNeg_;
+        }
+
+        if (onBack && d > 0)
+        {
+            ++nRawTransBackDPos_;
+        }
+        else if (onBack && d < 0)
+        {
+            ++nRawTransBackDNeg_;
+        }
 
         const scalar Np = cloud_.nParticle();
 
