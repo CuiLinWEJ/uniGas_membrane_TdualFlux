@@ -373,10 +373,10 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     const scalar d = nF & U;
 
     const bool incidentFromFront =
-        (onFront && d > 0) || (onBack && d < 0);
+        onFront && d > 0;
 
     const bool incidentFromBack =
-        (onBack && d > 0) || (onFront && d < 0);
+        onBack && d < 0;
 
     if (!incidentFromFront && !incidentFromBack)
     {
