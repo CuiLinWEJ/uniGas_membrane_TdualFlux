@@ -405,11 +405,13 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     const scalar mass = cloud_.constProps(typeId).mass();
     Random& rndGen = cloud_.rndGen();
 
-    // d describes the velocity relative to the normal of the current
-    // tracking face.  Record the raw face/sign combination before applying
-    // the diagnostic gating so receiving/sending-side behaviour is visible.
+    // A processor-cyclic hit is still on the sending face when controlMol()
+    // is called.  A local cyclic hit has already been transformed onto the
+    // receiving face by particle::hitCyclicPatch().
+    const bool processorCrossing = td.switchProcessor;
     const scalar d = nF & U;
 
+    // Keep raw face/sign counters while validating the corrected mapping.
     if (onFront && d > 0)
     {
         ++nRawFrontDPos_;
@@ -428,11 +430,17 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
         ++nRawBackDNeg_;
     }
 
+    // Physical direction depends on whether the current face is the sending
+    // side (processor-cyclic) or receiving side (local cyclic).
     const bool incidentFromFront =
-        onFront && d > 0;
+        processorCrossing
+      ? (onFront && d > 0)
+      : (onBack && d < 0);
 
     const bool incidentFromBack =
-        onBack && d < 0;
+        processorCrossing
+      ? (onBack && d > 0)
+      : (onFront && d < 0);
 
     if (!incidentFromFront && !incidentFromBack)
     {
@@ -466,9 +474,9 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
         vector tw2 = nw ^ tw1;
         tw2 /= mag(tw2);
 
-        // The return direction is defined from the current tracking face.
-        // This preserves the original local/processor-cyclic handling while
-        // temperature selection is now tied to the physical incident side.
+        // Return opposite to the incident direction relative to the current
+        // tracking face.  For local cyclic crossings this is the receiving
+        // face; topology is rolled back below after the reflected U is set.
         const vector nReturn = (d > 0) ? -nF : nF;
 
         const scalar normalSpeed =
@@ -499,7 +507,20 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
         membraneImpulse_ +=
             cloud_.nParticle()*mass*(preU - U);
 
-        td.switchProcessor = false;
+        if (processorCrossing)
+        {
+            // The processor transfer has not happened yet.  Cancelling the
+            // switch keeps the reflected particle on its incident side.
+            td.switchProcessor = false;
+        }
+        else
+        {
+            // Local cyclic topology was already mapped to the receiving side
+            // before controlMol().  A reflected particle must be mapped back
+            // immediately so it does not hit the membrane a second time.
+            p.returnAcrossCyclic(cloud_, td);
+        }
+
         ++nReflections_;
 
         writeLocalMembraneForce();
@@ -545,6 +566,9 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
             transmittedMomentum_ -= Np*mass*preU;
         }
 
+        // Local cyclic transmission is already on the receiving side.
+        // Processor-cyclic transmission keeps switchProcessor=true so the
+        // normal parallel transfer proceeds after controlMol() returns.
         writeLocalMembraneForce();
     }
 }
