@@ -13,6 +13,41 @@ All notable repository changes are documented here.
 
 - Add automated upstream patch/integration workflow.
 - Add reproducible benchmark and uncertainty results.
+- Add numerical sensitivity, uncertainty, and conservation studies before a future `v1.0.0` release.
+
+## [0.2.0] - 2026-08-10
+
+### Fixed
+
+- Corrected physical front/back incident-direction classification for local cyclic and processor-cyclic membrane crossings.
+- Corrected local cyclic reflection handling by rolling reflected parcels back to the incident side immediately.
+- Eliminated the cyclic reflection ping-pong behavior that could stall the `Pr100` no-transmission case.
+
+### Added
+
+- Added the `uniGasParcel::returnAcrossCyclic()` integration helper around OpenFOAM's existing cyclic topology/transform handling.
+- Added an idempotent Python installer for the required `uniGasParcel.H/.C` wrapper.
+- Added a traditional unified patch as an alternative integration method.
+- Documented the production 17-column membrane-flux output after removal of temporary raw-direction diagnostics.
+
+### Regression verification
+
+The cyclic-direction revision was exercised with 14 MPI ranks to `t = 0.001 s`:
+
+- `+X`, `Pr = 0.50`: reflection fraction `0.502565`; front-to-back transmission dominated (`45140` vs `1208`).
+- `+X`, `Pr = 1.00`: `76138` reflections, `0` transmissions; the run completed without the previous reflection hang.
+- `-X`, `Pr = 0.50`: reflection fraction `0.499242`; back-to-front transmission dominated (`72381` vs `2964`).
+
+A cleanup smoke test also confirmed that the production membrane-flux record contains 17 columns and that temporary raw-direction diagnostic fields are absent.
+
+### Documentation
+
+- Updated the integration instructions to include the required `uniGasParcel` cyclic rollback wrapper.
+- Updated citation metadata to version `0.2.0`.
+
+### Status
+
+This version is a **verified research prototype**, not a claim of comprehensive physical validation. Independent/reference validation, numerical sensitivity, repeated-run uncertainty, conservation checks, and clean-upstream reproducibility remain future work.
 
 ## [0.1.0] - 2026-08-07
 
