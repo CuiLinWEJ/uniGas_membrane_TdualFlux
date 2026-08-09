@@ -78,14 +78,6 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
     nTransmissions_(0),
     nTransFrontToBack_(0),
     nTransBackToFront_(0),
-    nRawFrontDPos_(0),
-    nRawFrontDNeg_(0),
-    nRawBackDPos_(0),
-    nRawBackDNeg_(0),
-    nRawTransFrontDPos_(0),
-    nRawTransFrontDNeg_(0),
-    nRawTransBackDPos_(0),
-    nRawTransBackDNeg_(0),
     transmittedNpFrontToBack_(0.0),
     transmittedNpBackToFront_(0.0),
     transmittedMassFrontToBack_(0.0),
@@ -164,16 +156,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
 
     nTransFrontToBack_ = 0;
     nTransBackToFront_ = 0;
-
-    nRawFrontDPos_ = 0;
-    nRawFrontDNeg_ = 0;
-    nRawBackDPos_ = 0;
-    nRawBackDNeg_ = 0;
-
-    nRawTransFrontDPos_ = 0;
-    nRawTransFrontDNeg_ = 0;
-    nRawTransBackDPos_ = 0;
-    nRawTransBackDNeg_ = 0;
 
     transmittedNpFrontToBack_ = 0.0;
     transmittedNpBackToFront_ = 0.0;
@@ -306,10 +288,7 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
                 << "transmittedMassFrontToBack transmittedMassBackToFront "
                 << "absNumberFlux netNumberFlux "
                 << "absMassFlux netMassFlux "
-                << "momentumFluxX momentumFluxY momentumFluxZ "
-                << "rawFrontDPos rawFrontDNeg rawBackDPos rawBackDNeg "
-                << "rawTransFrontDPos rawTransFrontDNeg "
-                << "rawTransBackDPos rawTransBackDNeg"
+                << "momentumFluxX momentumFluxY momentumFluxZ"
                 << std::endl;
         }
 
@@ -329,15 +308,7 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << netMassFlux << " "
             << momentumFlux.x() << " "
             << momentumFlux.y() << " "
-            << momentumFlux.z() << " "
-            << nRawFrontDPos_ << " "
-            << nRawFrontDNeg_ << " "
-            << nRawBackDPos_ << " "
-            << nRawBackDNeg_ << " "
-            << nRawTransFrontDPos_ << " "
-            << nRawTransFrontDNeg_ << " "
-            << nRawTransBackDPos_ << " "
-            << nRawTransBackDNeg_
+            << momentumFlux.z()
             << std::endl;
     }
 
@@ -347,16 +318,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
 
     nTransFrontToBack_ = 0;
     nTransBackToFront_ = 0;
-
-    nRawFrontDPos_ = 0;
-    nRawFrontDNeg_ = 0;
-    nRawBackDPos_ = 0;
-    nRawBackDNeg_ = 0;
-
-    nRawTransFrontDPos_ = 0;
-    nRawTransFrontDNeg_ = 0;
-    nRawTransBackDPos_ = 0;
-    nRawTransBackDNeg_ = 0;
 
     transmittedNpFrontToBack_ = 0.0;
     transmittedNpBackToFront_ = 0.0;
@@ -410,25 +371,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     // receiving face by particle::hitCyclicPatch().
     const bool processorCrossing = td.switchProcessor;
     const scalar d = nF & U;
-
-    // Keep raw face/sign counters while validating the corrected mapping.
-    if (onFront && d > 0)
-    {
-        ++nRawFrontDPos_;
-    }
-    else if (onFront && d < 0)
-    {
-        ++nRawFrontDNeg_;
-    }
-
-    if (onBack && d > 0)
-    {
-        ++nRawBackDPos_;
-    }
-    else if (onBack && d < 0)
-    {
-        ++nRawBackDNeg_;
-    }
 
     // Physical direction depends on whether the current face is the sending
     // side (processor-cyclic) or receiving side (local cyclic).
@@ -528,24 +470,6 @@ void Foam::uniGasReflectiveParticleMembranePatch::controlMol
     else // transmission
     {
         ++nTransmissions_;
-
-        if (onFront && d > 0)
-        {
-            ++nRawTransFrontDPos_;
-        }
-        else if (onFront && d < 0)
-        {
-            ++nRawTransFrontDNeg_;
-        }
-
-        if (onBack && d > 0)
-        {
-            ++nRawTransBackDPos_;
-        }
-        else if (onBack && d < 0)
-        {
-            ++nRawTransBackDNeg_;
-        }
 
         const scalar Np = cloud_.nParticle();
 
