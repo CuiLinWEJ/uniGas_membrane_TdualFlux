@@ -147,4 +147,4 @@ A single `temperature` entry may be used as a general fallback. Legacy physical-
 
 ## Compatibility Status
 
-The current integration has been compiled and exercised against upstream uniGasFoam commit `b81469f06dd6e70c4ec223d1e849765b297a4915` in an OpenFOAM v2412 development environment. Clean-clone reproduction against this pinned base is the first v0.3.0 verification task.
+The current integration has been compiled and exercised against upstream uniGasFoam commit `b81469f06dd6e70c4ec223d1e849765b297a4915` in an OpenFOAM v2412 development environment. Clean-clone reproduction against this pinned base has been completed for the v0.3.0 development branch, including clean integration, build verification, membrane parameter checks, reporting verification, and the three-case regression matrix. Comprehensive physical validation remains a separate task.
