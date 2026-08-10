@@ -97,6 +97,38 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
 {
     writeInTimeDir_ = false;
     writeInCase_ = false;
+
+    if (p_ < 0.0 || p_ > 1.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "reflectionProbability must satisfy 0 <= Pr <= 1, but got "
+            << p_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureFront_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureFront must be > 0 K, but got "
+            << temperatureFront_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureBack_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureBack must be > 0 K, but got "
+            << temperatureBack_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (forceWriteInterval_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "forceWriteInterval must be > 0 s, but got "
+            << forceWriteInterval_ << nl
+            << exit(FatalIOError);
+    }
 }
 
 
@@ -513,8 +545,68 @@ void Foam::uniGasReflectiveParticleMembranePatch::updateProperties
     const dictionary& dict
 )
 {
-    // The main properties should be updated first.
+    // Update the base boundary properties first.
     uniGasCyclicBoundary::updateProperties(dict);
+
+    // Refresh all membrane-specific cached properties.
+    propsDict_ = dict.subDict(typeName + "Properties");
+
+    p_ = propsDict_.get<scalar>("reflectionProbability");
+
+    temperatureFront_ =
+        propsDict_.getOrDefault<scalar>
+        (
+            "temperatureFront",
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+        );
+
+    temperatureBack_ =
+        propsDict_.getOrDefault<scalar>
+        (
+            "temperatureBack",
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+        );
+
+    velocity_ = propsDict_.get<vector>("velocity");
+
+    forceWriteInterval_ =
+        propsDict_.lookupOrDefault<scalar>
+        (
+            "forceWriteInterval",
+            mesh_.time().deltaTValue()
+        );
+
+    if (p_ < 0.0 || p_ > 1.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "reflectionProbability must satisfy 0 <= Pr <= 1, but got "
+            << p_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureFront_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureFront must be > 0 K, but got "
+            << temperatureFront_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureBack_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureBack must be > 0 K, but got "
+            << temperatureBack_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (forceWriteInterval_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "forceWriteInterval must be > 0 s, but got "
+            << forceWriteInterval_ << nl
+            << exit(FatalIOError);
+    }
 }
 
 
