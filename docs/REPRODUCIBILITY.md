@@ -177,6 +177,23 @@ Solver termination = End / Finalising parallel run
 
 The solver log reached `Time = 0.001` and then terminated normally with `End` and `Finalising parallel run`. This confirms the exact no-transmission limiting behavior, absence of the previous cyclic reflection hang for this clean build, and the production 17-column flux schema.
 
+### Clean `Pr050` forward (`+X`) result
+
+The clean-build forward-flow `Pr050` case produced:
+
+```text
+Reflections = 46606
+Transmissions = 46354
+Total = 92960
+Reflection fraction = 0.501355
+FrontToBack = 45212
+BackToFront = 1142
+Final simulation time = 0.001 s
+Solver termination = End / Finalising parallel run
+```
+
+The reflection fraction is statistically consistent with `Pr = 0.50`, and the transmitted-particle direction is strongly dominated by `FrontToBack`, as expected for the forward-flow regression configuration.
+
 ## v0.3.0 Reproducibility Checklist
 
 The following items should be completed before a v0.3.0 release is marked reproducible:
@@ -191,7 +208,7 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] exactly four tracked source modifications confirmed;
 - [x] clean-tree build completed successfully;
 - [x] `Pr100` no-transmission regression passed (`T = 0`, reflection fraction `1`, normal completion to `t = 0.001 s`);
-- [ ] `Pr050` forward-direction regression passed;
+- [x] `Pr050` forward-direction regression passed (reflection fraction `0.501355`, `FrontToBack > BackToFront`, normal completion to `t = 0.001 s`);
 - [ ] `Pr050` reverse-direction regression passed;
 - [x] production 17-column flux schema confirmed.
 
