@@ -152,7 +152,7 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] exact upstream repository identified;
 - [x] exact upstream base commit identified;
 - [x] OpenFOAM major environment identified (`v2412`);
-- [ ] fresh upstream clone created at the pinned commit;
+- [x] fresh upstream clone created at the pinned commit;
 - [ ] wrapper installer applied successfully to the fresh clone;
 - [ ] exactly four tracked source modifications confirmed;
 - [ ] clean-tree build completed successfully;
