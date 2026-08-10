@@ -194,9 +194,26 @@ Solver termination = End / Finalising parallel run
 
 The reflection fraction is statistically consistent with `Pr = 0.50`, and the transmitted-particle direction is strongly dominated by `FrontToBack`, as expected for the forward-flow regression configuration.
 
+### Clean `Pr050` reverse (`-X`) result
+
+The clean-build reverse-flow `Pr050` case produced:
+
+```text
+Reflections = 75037
+Transmissions = 75538
+Total = 150575
+Reflection fraction = 0.498336
+FrontToBack = 2928
+BackToFront = 72610
+Final simulation time = 0.001 s
+Solver termination = End / Finalising parallel run
+```
+
+The reflection fraction is statistically consistent with `Pr = 0.50`, and the transmitted-particle direction reverses as expected: `BackToFront` strongly dominates `FrontToBack`.
+
 ## v0.3.0 Reproducibility Checklist
 
-The following items should be completed before a v0.3.0 release is marked reproducible:
+The following clean-room reproducibility items are complete:
 
 - [x] exact upstream repository identified;
 - [x] exact upstream base commit identified;
@@ -209,9 +226,9 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] clean-tree build completed successfully;
 - [x] `Pr100` no-transmission regression passed (`T = 0`, reflection fraction `1`, normal completion to `t = 0.001 s`);
 - [x] `Pr050` forward-direction regression passed (reflection fraction `0.501355`, `FrontToBack > BackToFront`, normal completion to `t = 0.001 s`);
-- [ ] `Pr050` reverse-direction regression passed;
+- [x] `Pr050` reverse-direction regression passed (reflection fraction `0.498336`, `BackToFront > FrontToBack`, normal completion to `t = 0.001 s`);
 - [x] production 17-column flux schema confirmed.
 
 ## Interpretation
 
-Pinning the upstream commit and reproducing a clean build makes the software integration substantially more reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, and independent/reference comparisons remain separate validation tasks.
+The clean-room integration/regression matrix is complete for the current v0.3.0 development branch. Pinning the upstream commit and reproducing the build and directional regressions makes the software integration substantially more reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, parameter validation, reporting-finalisation checks, and independent/reference comparisons remain separate tasks.
