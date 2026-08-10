@@ -171,9 +171,11 @@ Transmissions = 0
 Total = 76093
 Reflection fraction = 1
 membraneFlux columns = 17
+Final simulation time = 0.001 s
+Solver termination = End / Finalising parallel run
 ```
 
-This confirms the exact no-transmission limiting behavior and the production 17-column flux schema. Completion to the requested final simulation time is tracked separately from these output checks.
+The solver log reached `Time = 0.001` and then terminated normally with `End` and `Finalising parallel run`. This confirms the exact no-transmission limiting behavior, absence of the previous cyclic reflection hang for this clean build, and the production 17-column flux schema.
 
 ## v0.3.0 Reproducibility Checklist
 
@@ -188,8 +190,7 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] wrapper installer applied successfully to the fresh clone;
 - [x] exactly four tracked source modifications confirmed;
 - [x] clean-tree build completed successfully;
-- [x] `Pr100` no-transmission property passed (`T = 0`, reflection fraction `1`);
-- [ ] `Pr100` run completion to the requested final time confirmed from the solver log;
+- [x] `Pr100` no-transmission regression passed (`T = 0`, reflection fraction `1`, normal completion to `t = 0.001 s`);
 - [ ] `Pr050` forward-direction regression passed;
 - [ ] `Pr050` reverse-direction regression passed;
 - [x] production 17-column flux schema confirmed.
