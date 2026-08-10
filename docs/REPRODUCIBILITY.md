@@ -161,6 +161,20 @@ membraneFlux.dat
 
 For short statistical regression tests, the exact historical particle counts are not required to match because DSMC sampling is stochastic. Directionality, limiting behavior, output schema, and statistically consistent reflection probability are the primary acceptance criteria.
 
+### Clean `Pr100` result
+
+The clean-build `Pr100` case produced:
+
+```text
+Reflections = 76093
+Transmissions = 0
+Total = 76093
+Reflection fraction = 1
+membraneFlux columns = 17
+```
+
+This confirms the exact no-transmission limiting behavior and the production 17-column flux schema. Completion to the requested final simulation time is tracked separately from these output checks.
+
 ## v0.3.0 Reproducibility Checklist
 
 The following items should be completed before a v0.3.0 release is marked reproducible:
@@ -174,10 +188,11 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] wrapper installer applied successfully to the fresh clone;
 - [x] exactly four tracked source modifications confirmed;
 - [x] clean-tree build completed successfully;
-- [ ] `Pr100` no-transmission regression passed;
+- [x] `Pr100` no-transmission property passed (`T = 0`, reflection fraction `1`);
+- [ ] `Pr100` run completion to the requested final time confirmed from the solver log;
 - [ ] `Pr050` forward-direction regression passed;
 - [ ] `Pr050` reverse-direction regression passed;
-- [ ] production 17-column flux schema confirmed.
+- [x] production 17-column flux schema confirmed.
 
 ## Interpretation
 
