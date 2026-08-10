@@ -6,11 +6,21 @@ All notable repository changes are documented here.
 
 ### Validation
 
+- Pinned the reproducibility base to `NVasileiadis93/uniGasFoam` commit `b81469f06dd6e70c4ec223d1e849765b297a4915` with OpenFOAM v2412.
+- Reproduced the integration from a fresh upstream clone and confirmed exactly four tracked source modifications.
+- Completed a clean `Allwmake` build with GCC 11.4.0 and Open MPI 4.1.2.
+- Re-ran the clean regression matrix to `t = 0.001 s`: `Pr100`, forward `Pr050`, and reverse `Pr050` all completed normally with the expected limiting/statistical behavior and transmission direction.
+- Reconfirmed the production 17-column `membraneFlux.dat` schema.
 - Comprehensive physical validation remains in progress.
-- Exact upstream uniGasFoam commit is not yet pinned.
+
+### Added
+
+- Added `docs/REPRODUCIBILITY.md` with the pinned upstream base, clean-integration procedure, build environment, regression matrix, and acceptance checklist.
 
 ### Planned
 
+- Add parameter validation and refresh derived cached properties in `updateProperties()`.
+- Verify force/flux final-interval reporting before changing finalisation behavior.
 - Add automated upstream patch/integration workflow.
 - Add reproducible benchmark and uncertainty results.
 - Add numerical sensitivity, uncertainty, and conservation studies before a future `v1.0.0` release.
