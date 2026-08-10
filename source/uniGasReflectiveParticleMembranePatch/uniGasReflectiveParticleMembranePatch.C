@@ -95,7 +95,9 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
     ),
     forceFileInitialised_(false)
 {
-    writeInTimeDir_ = false;
+    // Enable the OpenFOAM write-time output hook so pending
+    // membrane force/flux intervals can be flushed safely.
+    writeInTimeDir_ = true;
     writeInCase_ = false;
 
     if (p_ < 0.0 || p_ > 1.0)
@@ -200,11 +202,27 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
 }
 
 
-void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
+void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce
+(
+    const bool forceWrite,
+    const bool resetAfterWrite
+)
 {
     const scalar currentTime = mesh_.time().value();
 
-    if ((currentTime - lastReportTime_) < forceWriteInterval_)
+    // Nothing is pending for this processor.
+    if (nReflections_ == 0 && nTransmissions_ == 0)
+    {
+        return;
+    }
+
+    // Normal particle-triggered writes obey forceWriteInterval_.
+    // An OpenFOAM output event may force a partial-interval flush.
+    if
+    (
+        !forceWrite
+     && (currentTime - lastReportTime_) < forceWriteInterval_
+    )
     {
         return;
     }
@@ -344,21 +362,24 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << std::endl;
     }
 
-    membraneImpulse_ = Zero;
-    nReflections_ = 0;
-    nTransmissions_ = 0;
+    if (resetAfterWrite)
+    {
+        membraneImpulse_ = Zero;
+        nReflections_ = 0;
+        nTransmissions_ = 0;
 
-    nTransFrontToBack_ = 0;
-    nTransBackToFront_ = 0;
+        nTransFrontToBack_ = 0;
+        nTransBackToFront_ = 0;
 
-    transmittedNpFrontToBack_ = 0.0;
-    transmittedNpBackToFront_ = 0.0;
+        transmittedNpFrontToBack_ = 0.0;
+        transmittedNpBackToFront_ = 0.0;
 
-    transmittedMassFrontToBack_ = 0.0;
-    transmittedMassBackToFront_ = 0.0;
+        transmittedMassFrontToBack_ = 0.0;
+        transmittedMassBackToFront_ = 0.0;
 
-    transmittedMomentum_ = Zero;
-    lastReportTime_ = currentTime;
+        transmittedMomentum_ = Zero;
+        lastReportTime_ = currentTime;
+    }
 }
 
 
@@ -536,6 +557,11 @@ void Foam::uniGasReflectiveParticleMembranePatch::output
     const fileName& timePath
 )
 {
+    // Preserve partial force/flux intervals at OpenFOAM write times.
+    // Do not reset here because calculateProperties() needs the same
+    // accumulated data for the global report and performs the common reset.
+    writeLocalMembraneForce(true, false);
+
     calculateProperties();
 }
 

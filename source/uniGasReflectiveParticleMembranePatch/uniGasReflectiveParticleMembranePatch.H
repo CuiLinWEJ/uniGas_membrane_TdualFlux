@@ -158,7 +158,11 @@ public:
 
         void calculateProperties();
 
-        void writeLocalMembraneForce();
+        void writeLocalMembraneForce
+        (
+            const bool forceWrite = false,
+            const bool resetAfterWrite = true
+        );
 
         //- Create an initial configuration
         void initialConfiguration();
