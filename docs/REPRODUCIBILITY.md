@@ -20,7 +20,13 @@ Commit:     b81469f06dd6e70c4ec223d1e849765b297a4915
 Subject:    ISSUE #1: force ASCII write dicts
 ```
 
-The development environment used OpenFOAM v2412.
+The clean reproducibility build used:
+
+```text
+OpenFOAM:   v2412
+Compiler:   gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+MPI:        Open MPI 4.1.2
+```
 
 This commit is the reproducibility base for the current membrane integration work. Newer upstream uniGasFoam commits may exist, but they are not assumed to be equivalent until the membrane patch and parcel-tracking integration have been re-tested against them.
 
@@ -103,7 +109,7 @@ The fresh-clone integration check on 2026-08-10 produced exactly these four trac
 
 ## Build Procedure
 
-Load OpenFOAM v2412 and build the modified uniGas library/solver using the upstream project's normal build procedure. The development environment supports:
+Load OpenFOAM v2412 and build the modified uniGas library/solver using the upstream project's normal build procedure:
 
 ```bash
 source /usr/lib/openfoam/openfoam2412/etc/bashrc
@@ -111,17 +117,25 @@ cd ~/OpenFOAM/uniGasFoam-v030-clean
 ./Allwmake
 ```
 
-If a full `Allwmake` build is unnecessarily expensive during iteration, the modified library can be rebuilt directly:
+The clean-tree build completed successfully with `Allwmake exit = 0`.
+
+The resulting solver resolved:
+
+```text
+uniGasFoam:
+/home/aero506/OpenFOAM/aero506-v2412/platforms/linux64GccDPInt32Opt/bin/uniGasFoam
+
+libUniGas.so:
+/home/aero506/OpenFOAM/aero506-v2412/platforms/linux64GccDPInt32Opt/lib/libUniGas.so
+
+libOpenFOAM.so:
+/usr/lib/openfoam/openfoam2412/platforms/linux64GccDPInt32Opt/lib/libOpenFOAM.so
+```
+
+If a full `Allwmake` build is unnecessarily expensive during iteration, the modified library can also be rebuilt directly:
 
 ```bash
 wmake libso src/lagrangian/uniGas
-```
-
-After compilation, verify which library the solver resolves:
-
-```bash
-command -v uniGasFoam
-ldd "$(command -v uniGasFoam)" | grep -E 'libUniGas|libOpenFOAM'
 ```
 
 ## Minimum Regression Matrix
@@ -153,18 +167,18 @@ The following items should be completed before a v0.3.0 release is marked reprod
 
 - [x] exact upstream repository identified;
 - [x] exact upstream base commit identified;
-- [x] OpenFOAM major environment identified (`v2412`);
+- [x] OpenFOAM environment identified (`v2412`);
+- [x] compiler version recorded (`GCC 11.4.0`);
+- [x] MPI implementation/version recorded (`Open MPI 4.1.2`);
 - [x] fresh upstream clone created at the pinned commit;
 - [x] wrapper installer applied successfully to the fresh clone;
 - [x] exactly four tracked source modifications confirmed;
-- [ ] clean-tree build completed successfully;
+- [x] clean-tree build completed successfully;
 - [ ] `Pr100` no-transmission regression passed;
 - [ ] `Pr050` forward-direction regression passed;
 - [ ] `Pr050` reverse-direction regression passed;
-- [ ] production 17-column flux schema confirmed;
-- [ ] compiler version recorded;
-- [ ] MPI implementation/version recorded.
+- [ ] production 17-column flux schema confirmed.
 
 ## Interpretation
 
-Pinning the upstream commit makes the software integration reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, and independent/reference comparisons remain separate validation tasks.
+Pinning the upstream commit and reproducing a clean build makes the software integration substantially more reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, and independent/reference comparisons remain separate validation tasks.
