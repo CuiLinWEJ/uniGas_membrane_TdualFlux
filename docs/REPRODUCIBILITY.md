@@ -99,6 +99,8 @@ M src/lagrangian/uniGas/parcels/uniGasParcel.C
 M src/lagrangian/uniGas/parcels/uniGasParcel.H
 ```
 
+The fresh-clone integration check on 2026-08-10 produced exactly these four tracked modifications. The wrapper installer reported one declaration and one implementation added successfully, with no extra tracked files changed.
+
 ## Build Procedure
 
 Load OpenFOAM v2412 and build the modified uniGas library/solver using the upstream project's normal build procedure. The development environment supports:
@@ -153,8 +155,8 @@ The following items should be completed before a v0.3.0 release is marked reprod
 - [x] exact upstream base commit identified;
 - [x] OpenFOAM major environment identified (`v2412`);
 - [x] fresh upstream clone created at the pinned commit;
-- [ ] wrapper installer applied successfully to the fresh clone;
-- [ ] exactly four tracked source modifications confirmed;
+- [x] wrapper installer applied successfully to the fresh clone;
+- [x] exactly four tracked source modifications confirmed;
 - [ ] clean-tree build completed successfully;
 - [ ] `Pr100` no-transmission regression passed;
 - [ ] `Pr050` forward-direction regression passed;
