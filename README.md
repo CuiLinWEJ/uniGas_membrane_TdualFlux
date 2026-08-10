@@ -79,7 +79,7 @@ The cases are development/comparison cases, **not a complete validation suite**.
 
 This repository does **not** redistribute the complete uniGasFoam solver. It contains only the modified boundary source, cases, tools, and documentation needed to document this post-thesis development.
 
-Obtain upstream uniGasFoam separately, then integrate the files in `source/` into a compatible uniGasFoam source tree. See [`docs/INTEGRATION.md`](docs/INTEGRATION.md).
+Obtain upstream uniGasFoam separately at the pinned compatible revision, apply the required `uniGasParcel::returnAcrossCyclic()` wrapper, and then integrate the membrane files in `source/`. See [`docs/INTEGRATION.md`](docs/INTEGRATION.md) and [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md).
 
 Upstream project: `NVasileiadis93/uniGasFoam` on GitHub.
 
@@ -123,16 +123,18 @@ python ../../tools/sumMembraneFlux_binned.py
 Completed so far:
 
 - source implementation;
-- successful compilation in the development environment;
-- successful numerical execution of development cases;
-- preliminary limiting/comparison checks.
+- clean integration against the pinned upstream uniGasFoam revision;
+- successful clean-tree compilation with OpenFOAM v2412;
+- forward, reverse-flow, and no-transmission regression checks;
+- membrane input validation and runtime `reflectionProbability` reload verification;
+- partial-interval membrane force/flux reporting verification;
+- production 17-column `membraneFlux.dat` schema verification.
 
 Still required before calling the model fully validated:
 
 - a documented benchmark matrix;
 - conservation and statistical-uncertainty checks;
-- independent/reference comparisons over a wider parameter range;
-- reproducibility checks in a clean upstream environment.
+- independent/reference comparisons over a wider parameter range.
 
 See [`docs/VALIDATION.md`](docs/VALIDATION.md).
 
@@ -142,6 +144,7 @@ See [`docs/VALIDATION.md`](docs/VALIDATION.md).
 |---|---|
 | [`docs/THEORY.md`](docs/THEORY.md) | Physical and numerical interpretation of `Pr`, reflection, transmission, force, and two-sided flux accounting |
 | [`docs/INTEGRATION.md`](docs/INTEGRATION.md) | How to integrate the modified source into upstream uniGasFoam |
+| [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | Pinned upstream base, clean integration, build environment, and regression evidence |
 | [`docs/VALIDATION.md`](docs/VALIDATION.md) | What has and has not been validated |
 | [`docs/DEVELOPMENT_HISTORY.md`](docs/DEVELOPMENT_HISTORY.md) | Post-thesis development history and scope |
 | [`docs/AI_ASSISTANCE.md`](docs/AI_ASSISTANCE.md) | Disclosure of generative-AI assistance |

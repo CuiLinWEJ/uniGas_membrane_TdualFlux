@@ -4,6 +4,21 @@
 
 This repository intentionally contains only the modified membrane-boundary source, integration helper, research cases, tools, and documentation. It does not vendor a full copy of uniGasFoam/OpenFOAM.
 
+## Pinned Upstream Base
+
+The verified development tree is based on:
+
+```text
+Repository: NVasileiadis93/uniGasFoam
+Commit:     b81469f06dd6e70c4ec223d1e849765b297a4915
+Subject:    ISSUE #1: force ASCII write dicts
+OpenFOAM:   v2412
+```
+
+Use this exact commit for reproducibility work. Newer upstream revisions should be treated as unverified until the membrane integration has been rebuilt and regression-tested against them.
+
+See [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md) for the clean-clone procedure and acceptance checklist.
+
 ## Source Files
 
 The modified membrane implementation is located in:
@@ -117,7 +132,7 @@ ldd "$(command -v uniGasFoam)" | grep -E 'libUniGas|libOpenFOAM'
 
 Before production use, run the no-transmission `Pr100` case and at least one transmitting case. The v0.2.0 regression set additionally checks reversed flow to verify that the physical transmission direction reverses correctly.
 
-See [`VALIDATION.md`](VALIDATION.md) and [`../patches/APPLY_cyclic_direction_fix.md`](../patches/APPLY_cyclic_direction_fix.md) for the recorded regression results.
+See [`VALIDATION.md`](VALIDATION.md), [`REPRODUCIBILITY.md`](REPRODUCIBILITY.md), and [`../patches/APPLY_cyclic_direction_fix.md`](../patches/APPLY_cyclic_direction_fix.md) for the recorded regression results and clean integration procedure.
 
 ## Dictionary Notes
 
@@ -132,4 +147,4 @@ A single `temperature` entry may be used as a general fallback. Legacy physical-
 
 ## Compatibility Status
 
-The integration has been compiled and exercised in the maintainer's OpenFOAM v2412 development environment. The exact upstream uniGasFoam commit is not yet pinned, so users integrating into a different uniGasFoam revision should review the patch context and independently rebuild/test the result.
+The current integration has been compiled and exercised against upstream uniGasFoam commit `b81469f06dd6e70c4ec223d1e849765b297a4915` in an OpenFOAM v2412 development environment. Clean-clone reproduction against this pinned base has been completed for the v0.3.0 development branch, including clean integration, build verification, membrane parameter checks, reporting verification, and the three-case regression matrix. Comprehensive physical validation remains a separate task.

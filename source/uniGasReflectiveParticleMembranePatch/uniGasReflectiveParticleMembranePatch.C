@@ -95,8 +95,42 @@ Foam::uniGasReflectiveParticleMembranePatch::uniGasReflectiveParticleMembranePat
     ),
     forceFileInitialised_(false)
 {
-    writeInTimeDir_ = false;
+    // Enable the OpenFOAM write-time output hook so pending
+    // membrane force/flux intervals can be flushed safely.
+    writeInTimeDir_ = true;
     writeInCase_ = false;
+
+    if (p_ < 0.0 || p_ > 1.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "reflectionProbability must satisfy 0 <= Pr <= 1, but got "
+            << p_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureFront_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureFront must be > 0 K, but got "
+            << temperatureFront_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureBack_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureBack must be > 0 K, but got "
+            << temperatureBack_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (forceWriteInterval_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "forceWriteInterval must be > 0 s, but got "
+            << forceWriteInterval_ << nl
+            << exit(FatalIOError);
+    }
 }
 
 
@@ -168,11 +202,27 @@ void Foam::uniGasReflectiveParticleMembranePatch::calculateProperties()
 }
 
 
-void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
+void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce
+(
+    const bool forceWrite,
+    const bool resetAfterWrite
+)
 {
     const scalar currentTime = mesh_.time().value();
 
-    if ((currentTime - lastReportTime_) < forceWriteInterval_)
+    // Nothing is pending for this processor.
+    if (nReflections_ == 0 && nTransmissions_ == 0)
+    {
+        return;
+    }
+
+    // Normal particle-triggered writes obey forceWriteInterval_.
+    // An OpenFOAM output event may force a partial-interval flush.
+    if
+    (
+        !forceWrite
+     && (currentTime - lastReportTime_) < forceWriteInterval_
+    )
     {
         return;
     }
@@ -312,21 +362,24 @@ void Foam::uniGasReflectiveParticleMembranePatch::writeLocalMembraneForce()
             << std::endl;
     }
 
-    membraneImpulse_ = Zero;
-    nReflections_ = 0;
-    nTransmissions_ = 0;
+    if (resetAfterWrite)
+    {
+        membraneImpulse_ = Zero;
+        nReflections_ = 0;
+        nTransmissions_ = 0;
 
-    nTransFrontToBack_ = 0;
-    nTransBackToFront_ = 0;
+        nTransFrontToBack_ = 0;
+        nTransBackToFront_ = 0;
 
-    transmittedNpFrontToBack_ = 0.0;
-    transmittedNpBackToFront_ = 0.0;
+        transmittedNpFrontToBack_ = 0.0;
+        transmittedNpBackToFront_ = 0.0;
 
-    transmittedMassFrontToBack_ = 0.0;
-    transmittedMassBackToFront_ = 0.0;
+        transmittedMassFrontToBack_ = 0.0;
+        transmittedMassBackToFront_ = 0.0;
 
-    transmittedMomentum_ = Zero;
-    lastReportTime_ = currentTime;
+        transmittedMomentum_ = Zero;
+        lastReportTime_ = currentTime;
+    }
 }
 
 
@@ -504,6 +557,11 @@ void Foam::uniGasReflectiveParticleMembranePatch::output
     const fileName& timePath
 )
 {
+    // Preserve partial force/flux intervals at OpenFOAM write times.
+    // Do not reset here because calculateProperties() needs the same
+    // accumulated data for the global report and performs the common reset.
+    writeLocalMembraneForce(true, false);
+
     calculateProperties();
 }
 
@@ -513,8 +571,68 @@ void Foam::uniGasReflectiveParticleMembranePatch::updateProperties
     const dictionary& dict
 )
 {
-    // The main properties should be updated first.
+    // Update the base boundary properties first.
     uniGasCyclicBoundary::updateProperties(dict);
+
+    // Refresh all membrane-specific cached properties.
+    propsDict_ = dict.subDict(typeName + "Properties");
+
+    p_ = propsDict_.get<scalar>("reflectionProbability");
+
+    temperatureFront_ =
+        propsDict_.getOrDefault<scalar>
+        (
+            "temperatureFront",
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+        );
+
+    temperatureBack_ =
+        propsDict_.getOrDefault<scalar>
+        (
+            "temperatureBack",
+            propsDict_.getOrDefault<scalar>("temperature", 200.0)
+        );
+
+    velocity_ = propsDict_.get<vector>("velocity");
+
+    forceWriteInterval_ =
+        propsDict_.lookupOrDefault<scalar>
+        (
+            "forceWriteInterval",
+            mesh_.time().deltaTValue()
+        );
+
+    if (p_ < 0.0 || p_ > 1.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "reflectionProbability must satisfy 0 <= Pr <= 1, but got "
+            << p_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureFront_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureFront must be > 0 K, but got "
+            << temperatureFront_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (temperatureBack_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "temperatureBack must be > 0 K, but got "
+            << temperatureBack_ << nl
+            << exit(FatalIOError);
+    }
+
+    if (forceWriteInterval_ <= 0.0)
+    {
+        FatalIOErrorInFunction(propsDict_)
+            << "forceWriteInterval must be > 0 s, but got "
+            << forceWriteInterval_ << nl
+            << exit(FatalIOError);
+    }
 }
 
 
