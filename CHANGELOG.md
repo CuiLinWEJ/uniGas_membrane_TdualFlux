@@ -11,16 +11,23 @@ All notable repository changes are documented here.
 - Completed a clean `Allwmake` build with GCC 11.4.0 and Open MPI 4.1.2.
 - Re-ran the clean regression matrix to `t = 0.001 s`: `Pr100`, forward `Pr050`, and reverse `Pr050` all completed normally with the expected limiting/statistical behavior and transmission direction.
 - Reconfirmed the production 17-column `membraneFlux.dat` schema.
+- Added membrane input validation for `reflectionProbability`, `temperatureFront`, `temperatureBack`, and `forceWriteInterval`.
+- Verified runtime `boundariesDict` reload through `updateProperties()` by changing `reflectionProbability` from `0.50` to invalid `1.10` during execution and observing the expected fatal validation error.
+- Verified partial-interval membrane force/flux flushing with `endTime = 1e-5 s` and `forceWriteInterval = 1e-3 s`; both output files were preserved and the 17-column flux schema remained unchanged.
+- Re-ran `Pr100`, forward `Pr050`, and reverse `Pr050` after the reporting revision; all regression acceptance criteria remained satisfied.
 - Comprehensive physical validation remains in progress.
 
 ### Added
 
 - Added `docs/REPRODUCIBILITY.md` with the pinned upstream base, clean-integration procedure, build environment, regression matrix, and acceptance checklist.
 
-### Planned
+### Fixed
 
-- Add parameter validation and refresh derived cached properties in `updateProperties()`.
-- Verify force/flux final-interval reporting before changing finalisation behavior.
+- Added range validation for membrane-specific input properties.
+- Refreshed membrane-specific cached properties in `updateProperties()`.
+- Preserved partial membrane force/flux reporting intervals at OpenFOAM write events.
+
+### Planned
 - Add automated upstream patch/integration workflow.
 - Add reproducible benchmark and uncertainty results.
 - Add numerical sensitivity, uncertainty, and conservation studies before a future `v1.0.0` release.

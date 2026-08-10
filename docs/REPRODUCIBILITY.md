@@ -227,8 +227,50 @@ The following clean-room reproducibility items are complete:
 - [x] `Pr100` no-transmission regression passed (`T = 0`, reflection fraction `1`, normal completion to `t = 0.001 s`);
 - [x] `Pr050` forward-direction regression passed (reflection fraction `0.501355`, `FrontToBack > BackToFront`, normal completion to `t = 0.001 s`);
 - [x] `Pr050` reverse-direction regression passed (reflection fraction `0.498336`, `BackToFront > FrontToBack`, normal completion to `t = 0.001 s`);
-- [x] production 17-column flux schema confirmed.
+- [x] production 17-column flux schema confirmed;
+- [x] membrane input validation compiled and exercised;
+- [x] runtime boundariesDict reload verified with reflectionProbability;
+- [x] partial force/flux reporting interval flush verified;
+- [x] three-case clean regression matrix re-run after the reporting fix.
+
+## Parameter Validation and Reporting Verification
+
+Membrane-specific parameter validation was rebuilt successfully with `wmake libso src/lagrangian/uniGas` (`exit = 0`).
+
+Runtime tests:
+
+```text
+normal Pr = 0.50                 PASS
+reflectionProbability = 1.10    rejected as expected
+temperatureFront = 0 K          rejected as expected
+temperatureBack = 0 K           rejected as expected
+forceWriteInterval = 0 s        rejected as expected
+```
+
+The runtime reload path was verified by starting with `Pr = 0.50`, changing `system/boundariesDict` during execution to `Pr = 1.10`, and observing the expected validation error from `updateProperties()`.
+
+A partial-interval reporting probe used:
+
+```text
+endTime            = 1e-5 s
+writeInterval      = 1e-5 s
+forceWriteInterval = 1e-3 s
+```
+
+Although the normal reporting interval was longer than the entire simulation, the write-time flush produced both `membraneForce.dat` and `membraneFlux.dat`. The flux record retained the production 17-column schema.
+
+The reporting revision was then re-tested with the clean regression matrix:
+
+```text
+Pr = 1.00, +X: R = 76000, T = 0, reflection fraction = 1
+Pr = 0.50, +X: R = 46554, T = 46682, reflection fraction = 0.499314
+                 FrontToBack = 45467, BackToFront = 1215
+Pr = 0.50, -X: R = 75286, T = 75451, reflection fraction = 0.499453
+                 FrontToBack = 3054, BackToFront = 72397
+```
+
+For both `Pr = 0.50` cases, summed directional transmissions exactly matched summed total transmissions, and the expected flow-direction reversal was preserved.
 
 ## Interpretation
 
-The clean-room integration/regression matrix is complete for the current v0.3.0 development branch. Pinning the upstream commit and reproducing the build and directional regressions makes the software integration substantially more reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, parameter validation, reporting-finalisation checks, and independent/reference comparisons remain separate tasks.
+The clean-room integration/regression matrix is complete for the current v0.3.0 development branch. Pinning the upstream commit and reproducing the build and directional regressions makes the software integration substantially more reproducible, but it does not by itself constitute physical validation. Numerical sensitivity, repeated-run uncertainty, conservation accounting, and independent/reference comparisons remain separate tasks.
